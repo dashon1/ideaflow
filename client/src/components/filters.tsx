@@ -16,8 +16,8 @@ interface FiltersProps {
 
 export default function Filters({ onFiltersChange }: FiltersProps) {
   const [filters, setFilters] = useState({
-    platform: "",
-    category: "",
+    platform: "all",
+    category: "all",
     timeRange: "7",
     search: "",
   });
@@ -41,7 +41,7 @@ export default function Filters({ onFiltersChange }: FiltersProps) {
                 <SelectValue placeholder="All Platforms" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Platforms</SelectItem>
+                <SelectItem value="all">All Platforms</SelectItem>
                 <SelectItem value="Reddit">Reddit</SelectItem>
                 <SelectItem value="TikTok">TikTok</SelectItem>
                 <SelectItem value="Quora">Quora</SelectItem>
@@ -59,7 +59,7 @@ export default function Filters({ onFiltersChange }: FiltersProps) {
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Categories</SelectItem>
+                <SelectItem value="all">All Categories</SelectItem>
                 <SelectItem value="Productivity">Productivity</SelectItem>
                 <SelectItem value="Finance">Finance</SelectItem>
                 <SelectItem value="Health">Health</SelectItem>
@@ -80,7 +80,7 @@ export default function Filters({ onFiltersChange }: FiltersProps) {
                 <SelectItem value="7">Last 7 days</SelectItem>
                 <SelectItem value="30">Last 30 days</SelectItem>
                 <SelectItem value="90">Last 90 days</SelectItem>
-                <SelectItem value="">All time</SelectItem>
+                <SelectItem value="all">All time</SelectItem>
               </SelectContent>
             </Select>
           </div>

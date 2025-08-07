@@ -8,23 +8,22 @@ import { summarizeIdea, classifyIdea } from "./services/openai";
 import { scrapePlatform } from "./services/scraper";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Auth middleware
-  await setupAuth(app);
+  // Auth middleware - disabled for demo
+  // await setupAuth(app);
 
-  // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
-    }
+  // Auth routes - demo mode
+  app.get('/api/auth/user', async (req: any, res) => {
+    // Return demo user for demo purposes
+    res.json({
+      id: 'demo-user',
+      email: 'demo@example.com',
+      firstName: 'Demo',
+      lastName: 'User'
+    });
   });
 
   // Dashboard stats
-  app.get("/api/stats", isAuthenticated, async (req, res) => {
+  app.get("/api/stats", async (req, res) => {
     try {
       const stats = await storage.getStats();
       res.json(stats);
@@ -35,7 +34,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Pain Points routes
-  app.get("/api/pain-points", isAuthenticated, async (req, res) => {
+  app.get("/api/pain-points", async (req, res) => {
     try {
       const { platform, status, niche, limit = 50, offset = 0 } = req.query;
       
@@ -54,7 +53,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/pain-points", isAuthenticated, async (req, res) => {
+  app.post("/api/pain-points", async (req, res) => {
     try {
       const validatedData = insertPainPointSchema.parse(req.body);
       const painPoint = await storage.createPainPoint(validatedData);
@@ -65,7 +64,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/pain-points/:id/approve", isAuthenticated, async (req, res) => {
+  app.patch("/api/pain-points/:id/approve", async (req, res) => {
     try {
       const { id } = req.params;
       await storage.updatePainPointStatus(id, "approved");
@@ -99,7 +98,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Ideas routes
-  app.get("/api/ideas", isAuthenticated, async (req, res) => {
+  app.get("/api/ideas", async (req, res) => {
     try {
       const { status, domain, limit = 50, offset = 0 } = req.query;
       
@@ -117,7 +116,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/ideas/:id/approve", isAuthenticated, async (req, res) => {
+  app.patch("/api/ideas/:id/approve", async (req, res) => {
     try {
       const { id } = req.params;
       await storage.updateIdeaStatus(id, "approved");
@@ -129,7 +128,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // MVP routes
-  app.get("/api/mvps", isAuthenticated, async (req, res) => {
+  app.get("/api/mvps", async (req, res) => {
     try {
       const { limit = 50, offset = 0 } = req.query;
       
@@ -145,7 +144,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/mvps", isAuthenticated, async (req, res) => {
+  app.post("/api/mvps", async (req, res) => {
     try {
       const validatedData = insertMvpSchema.parse(req.body);
       const mvp = await storage.createMvp(validatedData);
@@ -157,7 +156,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Scraper routes
-  app.post("/api/scraper/start", isAuthenticated, async (req, res) => {
+  app.post("/api/scraper/start", async (req, res) => {
     try {
       const { platforms = ["reddit", "tiktok", "quora"], mode = "discovery", niche } = req.body;
       
@@ -186,9 +185,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Settings routes
-  app.get("/api/settings/:key", isAuthenticated, async (req: any, res) => {
+  app.get("/api/settings/:key", async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = 'demo-user';
       const { key } = req.params;
       
       const setting = await storage.getSetting(userId, key);
@@ -199,9 +198,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/settings", isAuthenticated, async (req: any, res) => {
+  app.post("/api/settings", async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = 'demo-user';
       const { key, value } = req.body;
       
       const setting = await storage.setSetting({
