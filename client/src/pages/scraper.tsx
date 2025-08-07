@@ -1,8 +1,48 @@
+import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Search, Play, Settings } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { Search, Play, Settings, Loader } from "lucide-react";
 
 export default function Scraper() {
+  const [isScrapingInProgress, setIsScrapingInProgress] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const startScrapingMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('/api/scraper/start', {
+        method: 'POST',
+        body: JSON.stringify({ platforms: ['Reddit', 'TikTok', 'Quora'] })
+      });
+      return response;
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Scraping Started!",
+        description: data.message || "Successfully started scraping for pain points.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/pain-points'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Scraping Failed",
+        description: error.message || "Failed to start scraping. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleStartScraping = () => {
+    setIsScrapingInProgress(true);
+    startScrapingMutation.mutate();
+    // Reset loading state after 3 seconds
+    setTimeout(() => setIsScrapingInProgress(false), 3000);
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -10,9 +50,17 @@ export default function Scraper() {
           <h1 className="text-2xl font-bold text-gray-900">Web Scraper</h1>
           <p className="text-gray-600">Discover pain points across social media platforms</p>
         </div>
-        <Button className="bg-primary-600 hover:bg-primary-700">
-          <Play className="w-4 h-4 mr-2" />
-          Start Scraping
+        <Button 
+          onClick={handleStartScraping}
+          disabled={startScrapingMutation.isPending || isScrapingInProgress}
+          className="bg-primary-600 hover:bg-primary-700"
+        >
+          {startScrapingMutation.isPending || isScrapingInProgress ? (
+            <Loader className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <Play className="w-4 h-4 mr-2" />
+          )}
+          {startScrapingMutation.isPending || isScrapingInProgress ? 'Scraping...' : 'Start Scraping'}
         </Button>
       </div>
 
