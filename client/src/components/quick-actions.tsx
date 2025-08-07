@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
@@ -36,14 +37,19 @@ const quickActions = [
 
 export default function QuickActions() {
   const [activeAction, setActiveAction] = useState<string | null>(null);
+  const [selectedNiche, setSelectedNiche] = useState<string>("discovery");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const scraperMutation = useMutation({
     mutationFn: async () => {
+      const mode = selectedNiche === "discovery" ? "discovery" : "niche";
+      const niche = selectedNiche === "discovery" ? undefined : selectedNiche;
+      
       await apiRequest("POST", "/api/scraper/start", {
         platforms: ["reddit", "tiktok", "quora"],
-        mode: "discovery",
+        mode,
+        niche,
       });
     },
     onSuccess: (data: any) => {
@@ -110,6 +116,28 @@ export default function QuickActions() {
         <CardTitle className="text-lg font-semibold text-gray-900">Quick Actions</CardTitle>
       </CardHeader>
       <CardContent>
+        <div className="mb-4">
+          <label className="text-sm font-medium text-gray-700 mb-2 block">
+            Scraper Mode:
+          </label>
+          <Select value={selectedNiche} onValueChange={setSelectedNiche}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select discovery mode" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="discovery">🌐 Auto Discovery (Trending)</SelectItem>
+              <SelectItem value="productivity">⚡ Productivity Tools</SelectItem>
+              <SelectItem value="finance">💰 Personal Finance</SelectItem>
+              <SelectItem value="fitness">🏃 Health & Fitness</SelectItem>
+              <SelectItem value="education">📚 EdTech & Learning</SelectItem>
+              <SelectItem value="business">🏢 Small Business</SelectItem>
+              <SelectItem value="parenting">👨‍👩‍👧‍👦 Parenting & Family</SelectItem>
+              <SelectItem value="mental-health">🧠 Mental Health</SelectItem>
+              <SelectItem value="remote-work">🏠 Remote Work</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        
         <div className="grid grid-cols-2 gap-4">
           {quickActions.map((action) => {
             const isActive = activeAction === action.action;

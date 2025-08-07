@@ -9,6 +9,7 @@ interface FiltersProps {
   onFiltersChange?: (filters: {
     platform?: string;
     category?: string;
+    niche?: string;
     timeRange?: string;
     search?: string;
   }) => void;
@@ -18,6 +19,7 @@ export default function Filters({ onFiltersChange }: FiltersProps) {
   const [filters, setFilters] = useState({
     platform: "all",
     category: "all",
+    niche: "all",
     timeRange: "7",
     search: "",
   });
@@ -66,6 +68,26 @@ export default function Filters({ onFiltersChange }: FiltersProps) {
                 <SelectItem value="Education">Education</SelectItem>
                 <SelectItem value="E-commerce">E-commerce</SelectItem>
                 <SelectItem value="Business">Business</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select 
+              value={filters.niche} 
+              onValueChange={(value) => handleFilterChange("niche", value)}
+            >
+              <SelectTrigger className="w-full sm:w-48">
+                <SelectValue placeholder="All Niches" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Niches</SelectItem>
+                <SelectItem value="productivity">Productivity Tools</SelectItem>
+                <SelectItem value="finance">Personal Finance</SelectItem>
+                <SelectItem value="fitness">Health & Fitness</SelectItem>
+                <SelectItem value="education">EdTech & Learning</SelectItem>
+                <SelectItem value="business">Small Business</SelectItem>
+                <SelectItem value="parenting">Parenting & Family</SelectItem>
+                <SelectItem value="mental-health">Mental Health</SelectItem>
+                <SelectItem value="remote-work">Remote Work</SelectItem>
               </SelectContent>
             </Select>
 

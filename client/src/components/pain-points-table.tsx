@@ -34,14 +34,30 @@ const statusColors = {
   "in-review": "bg-gray-100 text-gray-800",
 };
 
-export default function PainPointsTable() {
+interface PainPointsTableProps {
+  filters?: {
+    platform?: string;
+    category?: string;
+    niche?: string;
+    timeRange?: string;
+    search?: string;
+  };
+}
+
+export default function PainPointsTable({ filters }: PainPointsTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const { data: painPoints = [], isLoading } = useQuery<PainPoint[]>({
-    queryKey: ["/api/pain-points", { limit: itemsPerPage, offset: (currentPage - 1) * itemsPerPage }],
+    queryKey: ["/api/pain-points", { 
+      limit: itemsPerPage, 
+      offset: (currentPage - 1) * itemsPerPage,
+      platform: filters?.platform === "all" ? undefined : filters?.platform,
+      niche: filters?.niche === "all" ? undefined : filters?.niche,
+      search: filters?.search || undefined
+    }],
   });
 
   const approveMutation = useMutation({

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import Sidebar from "@/components/sidebar";
@@ -11,6 +11,13 @@ import QuickActions from "@/components/quick-actions";
 export default function Dashboard() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
+  const [filters, setFilters] = useState({
+    platform: "all",
+    category: "all", 
+    niche: "all",
+    timeRange: "7",
+    search: "",
+  });
 
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -71,8 +78,8 @@ export default function Dashboard() {
         {/* Main Dashboard Content */}
         <main className="flex-1 overflow-auto p-6">
           <StatsCards />
-          <Filters />
-          <PainPointsTable />
+          <Filters onFiltersChange={(newFilters) => setFilters(prev => ({ ...prev, ...newFilters }))} />
+          <PainPointsTable filters={filters} />
           
           {/* Recent Activity and Quick Actions */}
           <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">

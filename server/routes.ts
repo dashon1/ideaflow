@@ -39,9 +39,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { platform, status, niche, limit = 50, offset = 0 } = req.query;
       
       const painPoints = await storage.getPainPoints({
-        platform: platform as string,
-        status: status as string,
-        niche: niche as string,
+        platform: platform && platform !== 'all' ? platform as string : undefined,
+        status: status && status !== 'all' ? status as string : undefined,
+        niche: niche && niche !== 'all' ? niche as string : undefined,
         limit: parseInt(limit as string),
         offset: parseInt(offset as string),
       });
