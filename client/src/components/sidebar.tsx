@@ -40,18 +40,18 @@ export default function Sidebar() {
         {navigation.map((item) => {
           const isActive = location === item.href;
           return (
-            <Link key={item.name} href={item.href}>
-              <a
-                className={cn(
-                  "flex items-center space-x-3 px-3 py-2 rounded-lg font-medium transition-colors",
-                  isActive
-                    ? "bg-primary-50 text-primary-700"
-                    : "text-gray-700 hover:bg-gray-100"
-                )}
-              >
-                <item.icon className="w-5 h-5" />
-                <span>{item.name}</span>
-              </a>
+            <Link 
+              key={item.name} 
+              href={item.href}
+              className={cn(
+                "flex items-center space-x-3 px-3 py-2 rounded-lg font-medium transition-colors",
+                isActive
+                  ? "bg-primary-50 text-primary-700"
+                  : "text-gray-700 hover:bg-gray-100"
+              )}
+            >
+              <item.icon className="w-5 h-5" />
+              <span>{item.name}</span>
             </Link>
           );
         })}
@@ -59,11 +59,12 @@ export default function Sidebar() {
 
       {/* Bottom Section */}
       <div className="p-4 border-t border-gray-100">
-        <Link href="/settings">
-          <a className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100">
-            <Settings className="w-5 h-5" />
-            <span>Settings</span>
-          </a>
+        <Link 
+          href="/settings"
+          className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100"
+        >
+          <Settings className="w-5 h-5" />
+          <span>Settings</span>
         </Link>
         <button
           onClick={() => window.location.href = '/api/logout'}
