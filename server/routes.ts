@@ -216,6 +216,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Sample data regeneration route
+  app.post("/api/admin/regenerate-sample-data", async (req: any, res) => {
+    try {
+      await storage.generateSampleData();
+      res.json({ message: "Enhanced sample data generated successfully" });
+    } catch (error) {
+      console.error("Error generating sample data:", error);
+      res.status(500).json({ message: "Failed to generate sample data" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

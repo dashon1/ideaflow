@@ -46,6 +46,7 @@ export const painPoints = pgTable("pain_points", {
   fullText: text("full_text").notNull(),
   engagementScore: integer("engagement_score").default(0),
   detectedNiche: varchar("detected_niche"),
+  problemType: varchar("problem_type").default("Pain Point"), // Pain Point, Opportunity, Feature Gap
   timestamp: timestamp("timestamp").defaultNow(),
   mode: varchar("mode").notNull(), // Discovery or Niche
   status: varchar("status").default("pending"), // pending, approved, rejected

@@ -8,6 +8,13 @@
       "when": 1754531635329,
       "tag": "0000_outstanding_warlock",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1754537668319,
+      "tag": "0001_rich_skrulls",
+      "breakpoints": true
     }
   ]
 }

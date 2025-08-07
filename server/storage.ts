@@ -271,6 +271,185 @@ export class DatabaseStorage implements IStorage {
       successRate,
     };
   }
+
+  async generateSampleData(): Promise<void> {
+    // Clear existing data
+    await db.delete(content);
+    await db.delete(mvps);
+    await db.delete(ideas);
+    await db.delete(painPoints);
+
+    // Create enhanced sample pain points matching SaaS Genesis quality
+    const samplePainPoints = [
+      // Reddit Pain Points
+      {
+        platform: "Reddit",
+        sourceLink: "https://reddit.com/r/productivity/comments/xyz",
+        title: "Users struggle to manage and track recurring tasks in most to-do list apps, leading to missed deadlines.",
+        fullText: "I've tried Todoist, Notion, and TickTick but none of them handle recurring tasks well. When I complete a task, it just creates another instance without showing my completion history. I end up missing deadlines because I can't see patterns in my task completion. Need something that tracks recurring tasks intelligently.",
+        engagementScore: 856,
+        detectedNiche: "Productivity",
+        problemType: "Pain Point",
+        mode: "discovery",
+        status: "pending",
+      },
+      {
+        platform: "Reddit",
+        sourceLink: "https://reddit.com/r/reviews/comments/abc",
+        title: "Finding reliable, unbiased reviews for local services is difficult, as platforms are often gamed.",
+        fullText: "Local service reviews on Google and Yelp seem fake. Small businesses gaming the system with fake reviews while good businesses get buried. Need a platform that verifies reviews through actual service completion.",
+        engagementScore: 672,
+        detectedNiche: "Local",
+        problemType: "Pain Point",
+        mode: "discovery",
+        status: "pending",
+      },
+      {
+        platform: "Reddit",
+        sourceLink: "https://reddit.com/r/gaming/comments/def",
+        title: "Gamers want a central hub to track their backlog across different platforms (Steam, PlayStation, Xbox, Switch).",
+        fullText: "I have games across Steam, PlayStation, Xbox Game Pass, and Nintendo Switch. There's no good way to track my backlog and see what I should play next. Each platform has its own library but I want a unified view.",
+        engagementScore: 934,
+        detectedNiche: "Gaming",
+        problemType: "Opportunity",
+        mode: "discovery",
+        status: "approved",
+      },
+
+      // TikTok Pain Points
+      {
+        platform: "TikTok",
+        sourceLink: "https://tiktok.com/@productivity_hacks/video/123",
+        title: "Users showcase 'life hacks' for everyday problems that could be solved with a simple product or app.",
+        fullText: "Seeing all these TikTok life hacks for tracking water intake, meal planning, and daily routines. People are creating complex manual systems when these could be simple apps. There's a market for ultra-simple solutions to common daily problems.",
+        engagementScore: 543,
+        detectedNiche: "Life Hacks",
+        problemType: "Opportunity",
+        mode: "discovery",
+        status: "pending",
+      },
+      {
+        platform: "TikTok",
+        sourceLink: "https://tiktok.com/@finance_tips/video/456",
+        title: "A user rants about the difficulty of tracking personal expenses across various payment cards (Venmo, CashApp, Zelle).",
+        fullText: "Tracking expenses across Venmo, CashApp, Zelle, Apple Pay, and credit cards is impossible. Bank apps don't categorize well and I'm spending hours each month trying to figure out where my money went. Need automatic expense categorization across all payment methods.",
+        engagementScore: 789,
+        detectedNiche: "Finance",
+        problemType: "Pain Point",
+        mode: "niche",
+        status: "approved",
+      },
+      {
+        platform: "TikTok",
+        sourceLink: "https://tiktok.com/@workfromhome/video/789",
+        title: "A user demonstrates a clever workaround for a missing feature in a popular software, indicating a feature gap.",
+        fullText: "Using this weird workaround to track my work hours across different projects in Slack. Having to manually copy-paste timestamps into a spreadsheet because Slack doesn't have proper time tracking for freelancers. This should be built-in!",
+        engagementScore: 456,
+        detectedNiche: "Productivity",
+        problemType: "Feature Gap",
+        mode: "discovery",
+        status: "pending",
+      },
+
+      // Quora Pain Points  
+      {
+        platform: "Quora",
+        sourceLink: "https://quora.com/question/learning-skills",
+        title: "Users ask how to learn a new skill effectively online without getting lost in disorganized resources.",
+        fullText: "I want to learn web development but there are thousands of courses, tutorials, and resources. How do I create a structured learning path without spending weeks just researching what to learn? Need a personalized curriculum builder.",
+        engagementScore: 423,
+        detectedNiche: "Education",
+        problemType: "Pain Point",
+        mode: "discovery",
+        status: "pending",
+      },
+      {
+        platform: "Quora",
+        sourceLink: "https://quora.com/question/workout-consistency",
+        title: "People want to know why it's so hard to maintain a consistent workout routine.",
+        fullText: "I start working out enthusiastically but lose motivation after 2-3 weeks. Tried apps but they're either too basic or too complicated. Need something that adapts to my real life and keeps me motivated without being annoying.",
+        engagementScore: 567,
+        detectedNiche: "Fitness",
+        problemType: "Opportunity",
+        mode: "niche",
+        status: "approved",
+      },
+      {
+        platform: "Quora",
+        sourceLink: "https://quora.com/question/budget-management",
+        title: "Users seek solutions for managing personal finances and creating a budget that actually works.",
+        fullText: "Every budgeting app I try is either too simple (just expense tracking) or too complex (like accounting software). Need something that helps me understand my spending patterns and automatically suggests realistic budget adjustments.",
+        engagementScore: 712,
+        detectedNiche: "Finance",
+        problemType: "Pain Point",
+        mode: "discovery",
+        status: "approved",
+      },
+
+      // Additional platforms
+      {
+        platform: "Product Hunt",
+        sourceLink: "https://producthunt.com/discussions/remote-work",
+        title: "Home cooks desire a tool to easily adjust recipe serving sizes without manual calculations.",
+        fullText: "Recipe apps show ingredients for 4 servings but I'm cooking for 2 or 6 people. Having to calculate fractions for every ingredient is annoying. Need smart recipe scaling with automatic grocery list generation.",
+        engagementScore: 345,
+        detectedNiche: "Food",
+        problemType: "Feature Gap",
+        mode: "discovery",
+        status: "pending",
+      },
+      {
+        platform: "Twitter/X",
+        sourceLink: "https://twitter.com/user/status/123",
+        title: "Users learning a new language need practice partners but find existing platforms intimidating.",
+        fullText: "Language exchange apps like HelloTalk are overwhelming. Too many people, random conversations. Need structured practice sessions with specific topics and skill levels. Like Duolingo but with real people.",
+        engagementScore: 289,
+        detectedNiche: "Language Learning", 
+        problemType: "Opportunity",
+        mode: "discovery",
+        status: "pending",
+      },
+      {
+        platform: "Hacker News",
+        sourceLink: "https://news.ycombinator.com/item?id=123",
+        title: "There's a need for a clear, simple explanation of cryptocurrency without the marketing hype.",
+        fullText: "Every crypto educational resource is either too basic (what is Bitcoin) or pushes specific coins. Developers need practical guides for integrating crypto payments without the investment/trading noise.",
+        engagementScore: 178,
+        detectedNiche: "Education",
+        problemType: "Opportunity",
+        mode: "discovery",
+        status: "pending",
+      },
+      {
+        platform: "LinkedIn",
+        sourceLink: "https://linkedin.com/posts/professional",
+        title: "Pet owners struggle to find pet-friendly rental housing and want a dedicated search platform.",
+        fullText: "Apartment hunting with pets is a nightmare. Listings that say 'pets allowed' often have restrictions or extra fees that aren't mentioned upfront. Need a platform specifically for pet-friendly rentals with transparent policies.",
+        engagementScore: 434,
+        detectedNiche: "Real Estate",
+        problemType: "Opportunity",
+        mode: "niche",
+        status: "approved",
+      },
+      {
+        platform: "Indie Hackers",
+        sourceLink: "https://indiehackers.com/forum/post/abc",
+        title: "Solo entrepreneurs need practice partners but find existing platforms intimidating.",
+        fullText: "Building a SaaS solo is lonely. Need a platform to find other indie hackers for accountability partnerships, skill exchanges, and feedback sessions. Current communities are too large and unfocused.",
+        engagementScore: 567,
+        detectedNiche: "Business",
+        problemType: "Opportunity",
+        mode: "discovery",
+        status: "pending",
+      },
+    ];
+
+    for (const painPoint of samplePainPoints) {
+      await this.createPainPoint(painPoint);
+    }
+
+    console.log("Enhanced sample data generated successfully");
+  }
 }
 
 export const storage = new DatabaseStorage();

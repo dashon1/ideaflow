@@ -1,0 +1,1 @@
+ALTER TABLE "pain_points" ADD COLUMN "problem_type" varchar DEFAULT 'Pain Point';
