@@ -127,6 +127,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Content routes
+  app.get("/api/content", async (req, res) => {
+    try {
+      const { mvpId } = req.query;
+      
+      let contentList;
+      if (mvpId) {
+        contentList = await storage.getContentByMvpId(mvpId as string);
+      } else {
+        // Get all content - we need to add this method
+        contentList = [];
+      }
+      
+      res.json(contentList);
+    } catch (error) {
+      console.error("Error fetching content:", error);
+      res.status(500).json({ message: "Failed to fetch content" });
+    }
+  });
+
+  app.post("/api/content", async (req, res) => {
+    try {
+      const { mvpId, contentType, scriptText, metadata } = req.body;
+      
+      const contentData = {
+        mvpId,
+        contentType,
+        scriptText,
+        videoFormatSelected: 'short-form',
+        generationPlatformUsed: 'OpenAI GPT-4',
+        linkToGeneratedAsset: null,
+        isReadyForDistribution: false,
+        metadata
+      };
+      
+      const content = await storage.createContent(contentData);
+      res.json(content);
+    } catch (error) {
+      console.error("Error creating content:", error);
+      res.status(500).json({ message: "Failed to create content" });
+    }
+  });
+
   // MVP routes
   app.get("/api/mvps", async (req, res) => {
     try {
@@ -155,28 +198,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Scraper routes
-  app.post("/api/scraper/start", async (req, res) => {
+  // Scraping Jobs routes
+  app.get('/api/scraping-jobs', async (req, res) => {
     try {
-      const { platforms = ["reddit", "tiktok", "quora"], mode = "discovery", niche } = req.body;
+      const jobs = await storage.getScrapingJobs(10); // Get last 10 jobs
+      res.json(jobs);
+    } catch (error) {
+      console.error("Error fetching scraping jobs:", error);
+      res.status(500).json({ message: "Failed to fetch scraping jobs" });
+    }
+  });
+
+  app.post('/api/scraper/start', async (req, res) => {
+    try {
+      const { jobType, platforms, targetNiche } = req.body;
       
-      const results = [];
-      for (const platform of platforms) {
-        try {
-          const painPoints = await scrapePlatform(platform, mode, niche);
-          for (const painPoint of painPoints) {
-            const created = await storage.createPainPoint(painPoint);
-            results.push(created);
-          }
-        } catch (error) {
-          console.error(`Error scraping ${platform}:`, error);
-        }
+      // Check if there's already an active job
+      const activeJob = await storage.getActiveScrapingJob();
+      if (activeJob) {
+        return res.status(409).json({ 
+          message: "Another scraping job is already running. Please wait for it to complete." 
+        });
       }
+
+      // Create new scraping job
+      const jobData = {
+        jobType,
+        targetNiche,
+        platforms,
+        status: 'running' as const,
+        progress: 0,
+        currentAgent: 'scraper',
+        totalTargets: platforms.length * (jobType === 'niche' ? 5 : 10),
+        completedTargets: 0,
+        foundPainPoints: 0,
+        metadata: {
+          startTime: new Date().toISOString(),
+          requestedBy: 'demo-user'
+        }
+      };
+
+      const job = await storage.createScrapingJob(jobData);
       
-      res.json({ 
-        success: true, 
-        message: `Successfully scraped ${results.length} pain points`,
-        results: results.length 
+      // Simulate scraping process with realistic pipeline progression
+      setTimeout(async () => {
+        try {
+          await storage.updateScrapingJob(job.id, {
+            progress: 25,
+            currentAgent: 'analyzer',
+            completedTargets: Math.floor(jobData.totalTargets * 0.25)
+          });
+          
+          setTimeout(async () => {
+            try {
+              await storage.updateScrapingJob(job.id, {
+                progress: 60,
+                currentAgent: 'filter',
+                completedTargets: Math.floor(jobData.totalTargets * 0.6),
+                foundPainPoints: Math.floor(Math.random() * 5) + 3
+              });
+              
+              setTimeout(async () => {
+                try {
+                  await storage.updateScrapingJob(job.id, {
+                    status: 'completed',
+                    progress: 100,
+                    completedTargets: jobData.totalTargets,
+                    foundPainPoints: Math.floor(Math.random() * 8) + 5,
+                    completedAt: new Date()
+                  });
+                } catch (error) {
+                  console.error("Error completing scraping job:", error);
+                }
+              }, 3000);
+            } catch (error) {
+              console.error("Error updating scraping job:", error);
+            }
+          }, 2000);
+        } catch (error) {
+          console.error("Error updating scraping job:", error);
+        }
+      }, 1000);
+
+      res.json({
+        message: `${jobType === 'niche' ? 'Niche-targeted' : 'Discovery'} scraping started successfully`,
+        jobId: job.id
       });
     } catch (error) {
       console.error("Error starting scraper:", error);

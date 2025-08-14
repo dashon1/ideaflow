@@ -5,6 +5,7 @@ import {
   mvps,
   content,
   settings,
+  scrapingJobs,
   type User,
   type UpsertUser,
   type PainPoint,
@@ -17,6 +18,8 @@ import {
   type InsertContent,
   type Setting,
   type InsertSetting,
+  type ScrapingJob,
+  type InsertScrapingJob,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, like, inArray } from "drizzle-orm";
@@ -245,6 +248,36 @@ export class DatabaseStorage implements IStorage {
     return upserted;
   }
 
+  // Scraping Jobs operations
+  async createScrapingJob(jobData: InsertScrapingJob): Promise<ScrapingJob> {
+    const [created] = await db.insert(scrapingJobs).values(jobData).returning();
+    return created;
+  }
+
+  async getScrapingJobs(limit?: number): Promise<ScrapingJob[]> {
+    let query = db.select().from(scrapingJobs).orderBy(desc(scrapingJobs.startedAt));
+    
+    if (limit) {
+      query = query.limit(limit) as any;
+    }
+    
+    return await query;
+  }
+
+  async updateScrapingJob(id: string, updates: Partial<ScrapingJob>): Promise<void> {
+    await db.update(scrapingJobs).set(updates).where(eq(scrapingJobs.id, id));
+  }
+
+  async getActiveScrapingJob(): Promise<ScrapingJob | undefined> {
+    const [job] = await db
+      .select()
+      .from(scrapingJobs)
+      .where(eq(scrapingJobs.status, 'running'))
+      .orderBy(desc(scrapingJobs.startedAt))
+      .limit(1);
+    return job;
+  }
+
   // Analytics
   async getStats(): Promise<{
     totalPainPoints: number;
@@ -274,10 +307,16 @@ export class DatabaseStorage implements IStorage {
 
   async generateSampleData(): Promise<void> {
     // Clear existing data
+    await db.delete(scrapingJobs);
     await db.delete(content);
     await db.delete(mvps);
     await db.delete(ideas);
     await db.delete(painPoints);
+
+    // Function to create unique hash for deduplication
+    const createHash = (title: string, platform: string) => {
+      return Buffer.from(title + platform).toString('base64').slice(0, 16);
+    };
 
     // Create enhanced sample pain points matching SaaS Genesis quality
     const samplePainPoints = [
@@ -292,6 +331,7 @@ export class DatabaseStorage implements IStorage {
         problemType: "Pain Point",
         mode: "discovery",
         status: "pending",
+        uniqueHash: createHash("Users struggle to manage and track recurring tasks in most to-do list apps, leading to missed deadlines.", "Reddit"),
       },
       {
         platform: "Reddit",
@@ -303,6 +343,7 @@ export class DatabaseStorage implements IStorage {
         problemType: "Pain Point",
         mode: "discovery",
         status: "pending",
+        uniqueHash: createHash("Finding reliable, unbiased reviews for local services is difficult, as platforms are often gamed.", "Reddit"),
       },
       {
         platform: "Reddit",
@@ -314,6 +355,7 @@ export class DatabaseStorage implements IStorage {
         problemType: "Opportunity",
         mode: "discovery",
         status: "approved",
+        uniqueHash: createHash("Gamers want a central hub to track their backlog across different platforms (Steam, PlayStation, Xbox, Switch).", "Reddit"),
       },
 
       // TikTok Pain Points
@@ -327,6 +369,7 @@ export class DatabaseStorage implements IStorage {
         problemType: "Opportunity",
         mode: "discovery",
         status: "pending",
+        uniqueHash: createHash("Users showcase 'life hacks' for everyday problems that could be solved with a simple product or app.", "TikTok"),
       },
       {
         platform: "TikTok",
@@ -338,6 +381,7 @@ export class DatabaseStorage implements IStorage {
         problemType: "Pain Point",
         mode: "niche",
         status: "approved",
+        uniqueHash: createHash("A user rants about the difficulty of tracking personal expenses across various payment cards (Venmo, CashApp, Zelle).", "TikTok"),
       },
       {
         platform: "TikTok",
@@ -349,6 +393,7 @@ export class DatabaseStorage implements IStorage {
         problemType: "Feature Gap",
         mode: "discovery",
         status: "pending",
+        uniqueHash: createHash("A user demonstrates a clever workaround for a missing feature in a popular software, indicating a feature gap.", "TikTok"),
       },
 
       // Quora Pain Points  
@@ -362,6 +407,7 @@ export class DatabaseStorage implements IStorage {
         problemType: "Pain Point",
         mode: "discovery",
         status: "pending",
+        uniqueHash: createHash("Users ask how to learn a new skill effectively online without getting lost in disorganized resources.", "Quora"),
       },
       {
         platform: "Quora",
@@ -373,6 +419,7 @@ export class DatabaseStorage implements IStorage {
         problemType: "Opportunity",
         mode: "niche",
         status: "approved",
+        uniqueHash: createHash("People want to know why it's so hard to maintain a consistent workout routine.", "Quora"),
       },
       {
         platform: "Quora",
@@ -384,6 +431,7 @@ export class DatabaseStorage implements IStorage {
         problemType: "Pain Point",
         mode: "discovery",
         status: "approved",
+        uniqueHash: createHash("Users seek solutions for managing personal finances and creating a budget that actually works.", "Quora"),
       },
 
       // Additional platforms
@@ -397,6 +445,7 @@ export class DatabaseStorage implements IStorage {
         problemType: "Feature Gap",
         mode: "discovery",
         status: "pending",
+        uniqueHash: createHash("Home cooks desire a tool to easily adjust recipe serving sizes without manual calculations.", "Product Hunt"),
       },
       {
         platform: "Twitter/X",
@@ -408,6 +457,7 @@ export class DatabaseStorage implements IStorage {
         problemType: "Opportunity",
         mode: "discovery",
         status: "pending",
+        uniqueHash: createHash("Users learning a new language need practice partners but find existing platforms intimidating.", "Twitter/X"),
       },
       {
         platform: "Hacker News",
@@ -419,6 +469,7 @@ export class DatabaseStorage implements IStorage {
         problemType: "Opportunity",
         mode: "discovery",
         status: "pending",
+        uniqueHash: createHash("There's a need for a clear, simple explanation of cryptocurrency without the marketing hype.", "Hacker News"),
       },
       {
         platform: "LinkedIn",
@@ -430,6 +481,7 @@ export class DatabaseStorage implements IStorage {
         problemType: "Opportunity",
         mode: "niche",
         status: "approved",
+        uniqueHash: createHash("Pet owners struggle to find pet-friendly rental housing and want a dedicated search platform.", "LinkedIn"),
       },
       {
         platform: "Indie Hackers",
@@ -441,6 +493,7 @@ export class DatabaseStorage implements IStorage {
         problemType: "Opportunity",
         mode: "discovery",
         status: "pending",
+        uniqueHash: createHash("Solo entrepreneurs need practice partners but find existing platforms intimidating.", "Indie Hackers"),
       },
     ];
 

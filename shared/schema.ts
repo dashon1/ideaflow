@@ -50,7 +50,26 @@ export const painPoints = pgTable("pain_points", {
   timestamp: timestamp("timestamp").defaultNow(),
   mode: varchar("mode").notNull(), // Discovery or Niche
   status: varchar("status").default("pending"), // pending, approved, rejected
+  uniqueHash: varchar("unique_hash"), // for deduplication
   createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Scraping jobs and pipeline tracking
+export const scrapingJobs = pgTable("scraping_jobs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  jobType: varchar("job_type").notNull(), // discovery, niche
+  targetNiche: varchar("target_niche"),
+  platforms: text("platforms").array(),
+  status: varchar("status").default("pending"), // pending, running, completed, failed
+  progress: integer("progress").default(0), // 0-100
+  currentAgent: varchar("current_agent"), // scraper, analyzer, filter
+  totalTargets: integer("total_targets").default(0),
+  completedTargets: integer("completed_targets").default(0),
+  foundPainPoints: integer("found_pain_points").default(0),
+  startedAt: timestamp("started_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+  errorMessage: text("error_message"),
+  metadata: jsonb("metadata"),
 });
 
 // AI-summarized ideas from pain points
@@ -145,3 +164,10 @@ export const insertSettingSchema = createInsertSchema(settings).omit({
 });
 export type InsertSetting = z.infer<typeof insertSettingSchema>;
 export type Setting = typeof settings.$inferSelect;
+
+export const insertScrapingJobSchema = createInsertSchema(scrapingJobs).omit({
+  id: true,
+  startedAt: true,
+});
+export type InsertScrapingJob = z.infer<typeof insertScrapingJobSchema>;
+export type ScrapingJob = typeof scrapingJobs.$inferSelect;
