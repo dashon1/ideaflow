@@ -132,7 +132,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { mvpId } = req.query;
       
-      let contentList;
+      let contentList: any[];
       if (mvpId) {
         contentList = await storage.getContentByMvpId(mvpId as string);
       } else {

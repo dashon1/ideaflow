@@ -7,6 +7,7 @@ import Filters from "@/components/filters";
 import PainPointsTable from "@/components/pain-points-table";
 import RecentActivity from "@/components/recent-activity";
 import QuickActions from "@/components/quick-actions";
+import NicheScraper from "@/components/niche-scraper";
 
 export default function Dashboard() {
   const { toast } = useToast();
@@ -62,14 +63,17 @@ export default function Dashboard() {
               <p className="text-gray-600 mt-1">Discover trending pain points and build MVPs</p>
             </div>
             <div className="flex items-center space-x-4">
-              <button className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 font-medium flex items-center space-x-2">
+              <a
+                href="/scraper"
+                className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 font-medium flex items-center space-x-2 no-underline"
+              >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path>
                 </svg>
                 <span>Start Scraper</span>
-              </button>
+              </a>
               <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-                <span className="text-sm font-medium text-gray-700">JS</span>
+                <span className="text-sm font-medium text-gray-700">DU</span>
               </div>
             </div>
           </div>
@@ -78,6 +82,13 @@ export default function Dashboard() {
         {/* Main Dashboard Content */}
         <main className="flex-1 overflow-auto p-6">
           <StatsCards />
+          
+          {/* Niche Scraper - Primary Action */}
+          <div className="mb-8">
+            <NicheScraper />
+          </div>
+          
+          {/* Data Filters */}
           <Filters onFiltersChange={(newFilters) => setFilters(prev => ({ ...prev, ...newFilters }))} />
           <PainPointsTable filters={filters} />
           

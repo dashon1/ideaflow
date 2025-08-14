@@ -111,7 +111,7 @@ export default function Filters({ onFiltersChange }: FiltersProps) {
             <div className="relative">
               <Input
                 type="text"
-                placeholder="Search pain points..."
+                placeholder="Filter existing data..."
                 value={filters.search}
                 onChange={(e) => handleFilterChange("search", e.target.value)}
                 className="w-full sm:w-64 pl-10 pr-4 py-2"
