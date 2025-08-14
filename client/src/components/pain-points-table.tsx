@@ -62,7 +62,7 @@ export default function PainPointsTable({ filters }: PainPointsTableProps) {
 
   const approveMutation = useMutation({
     mutationFn: async (id: string) => {
-      await apiRequest("PATCH", `/api/pain-points/${id}/approve`);
+      await apiRequest(`/api/pain-points/${id}/approve`, "PATCH");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/pain-points"] });

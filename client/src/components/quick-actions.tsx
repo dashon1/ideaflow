@@ -46,7 +46,7 @@ export default function QuickActions() {
       const mode = selectedNiche === "discovery" ? "discovery" : "niche";
       const niche = selectedNiche === "discovery" ? undefined : selectedNiche;
       
-      await apiRequest("POST", "/api/scraper/start", {
+      await apiRequest("/api/scraper/start", "POST", {
         platforms: ["reddit", "tiktok", "quora"],
         mode,
         niche,

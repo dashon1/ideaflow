@@ -27,15 +27,12 @@ export default function MVP() {
         throw new Error('No approved ideas available for MVP creation');
       }
       
-      const response = await apiRequest('/api/mvps', {
-        method: 'POST',
-        body: JSON.stringify({ 
-          ideaId: approvedIdea.id,
-          platform: 'Lovable',
-          template: 'saas'
-        })
+      const response = await apiRequest('/api/mvps', 'POST', { 
+        ideaId: approvedIdea.id,
+        platform: 'Lovable',
+        template: 'saas'
       });
-      return response;
+      return await response.json();
     },
     onSuccess: (data) => {
       toast({

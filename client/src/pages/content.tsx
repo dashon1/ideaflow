@@ -27,15 +27,13 @@ export default function Content() {
         throw new Error('No approved ideas available for content creation');
       }
       
-      const response = await apiRequest('/api/content', {
-        method: 'POST',
-        body: JSON.stringify({ 
-          ideaId: approvedIdea.id,
-          type: 'text',
-          platform: 'OpenAI'
-        })
+      const response = await apiRequest('/api/content', 'POST', { 
+        mvpId: approvedIdea.id,
+        contentType: 'text',
+        scriptText: `Create marketing content for: ${approvedIdea.summaryText}`,
+        metadata: { platform: 'OpenAI' }
       });
-      return response;
+      return await response.json();
     },
     onSuccess: (data) => {
       toast({

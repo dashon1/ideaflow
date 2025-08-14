@@ -41,7 +41,7 @@ export default function NicheScraper() {
       };
       
       const response = await apiRequest('/api/scraper/start', 'POST', payload);
-      return response;
+      return await response.json();
     },
     onSuccess: () => {
       toast({
