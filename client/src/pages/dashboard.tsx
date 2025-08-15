@@ -8,6 +8,7 @@ import PainPointsTable from "@/components/pain-points-table";
 import RecentActivity from "@/components/recent-activity";
 import QuickActions from "@/components/quick-actions";
 import NicheScraper from "@/components/niche-scraper";
+import InteractiveDemo from "@/components/interactive-demo";
 
 export default function Dashboard() {
   const { toast } = useToast();
@@ -92,6 +93,11 @@ export default function Dashboard() {
           <Filters onFiltersChange={(newFilters) => setFilters(prev => ({ ...prev, ...newFilters }))} />
           <PainPointsTable filters={filters} />
           
+          {/* Interactive Demo */}
+          <div className="mb-8">
+            <InteractiveDemo />
+          </div>
+
           {/* Recent Activity and Quick Actions */}
           <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
             <RecentActivity />

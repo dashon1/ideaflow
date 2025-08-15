@@ -317,6 +317,8 @@ export class DatabaseStorage implements IStorage {
     const createHash = (title: string, platform: string) => {
       return Buffer.from(title + platform).toString('base64').slice(0, 16);
     };
+    
+    const generateId = () => Math.random().toString(36).substring(2) + Date.now().toString(36);
 
     // Create enhanced sample pain points matching SaaS Genesis quality
     const samplePainPoints = [
