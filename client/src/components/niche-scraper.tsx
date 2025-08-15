@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,24 +7,25 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Search, Target, Loader, Zap } from "lucide-react";
+import { Search, Target, Loader, Zap, Crown, Star, CheckCircle } from "lucide-react";
+import { ALL_PLATFORMS, PLATFORM_CATEGORIES, getPlatformsByTier } from "@/data/platforms";
 
 export default function NicheScraper() {
   const [nicheInput, setNicheInput] = useState("");
-  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(['Reddit', 'TikTok', 'Quora']);
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(['reddit', 'tiktok', 'quora']);
+  const [selectedCategory, setSelectedCategory] = useState('All');
   const [isExpanded, setIsExpanded] = useState(false);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const availablePlatforms = [
-    { name: 'Reddit', active: true },
-    { name: 'TikTok', active: true },
-    { name: 'Quora', active: true },
-    { name: 'YouTube', active: false },
-    { name: 'LinkedIn', active: false },
-    { name: 'Twitter/X', active: false }
-  ];
+  // Get current user to check tier access
+  const { data: user } = useQuery({
+    queryKey: ['/api/auth/user'],
+  });
+
+  const userTier = user?.subscriptionTier || 'standard';
+  const availablePlatforms = getPlatformsByTier(userTier as 'standard' | 'pro' | 'elite');
 
   const popularNiches = [
     'AI & Machine Learning', 'SaaS Tools', 'E-commerce', 'Digital Marketing',
@@ -169,35 +170,103 @@ export default function NicheScraper() {
 
         {/* Platform Selection */}
         {isExpanded && (
-          <div className="space-y-2 pt-2 border-t border-blue-200">
-            <p className="text-sm text-gray-600">Select platforms to scrape:</p>
-            <div className="grid grid-cols-3 gap-2">
-              {availablePlatforms.map(platform => (
-                <Button
-                  key={platform.name}
-                  variant={selectedPlatforms.includes(platform.name) ? "default" : "outline"}
-                  size="sm"
-                  disabled={!platform.active}
-                  onClick={() => platform.active && togglePlatform(platform.name)}
-                  className="justify-start"
-                >
-                  {platform.name}
-                  {!platform.active && <span className="ml-1 text-xs">(Soon)</span>}
-                </Button>
-              ))}
+          <div className="space-y-4 pt-2 border-t border-blue-200">
+            {/* Tier Status */}
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center space-x-2">
+                {userTier === 'elite' ? <Crown className="w-4 h-4 text-yellow-500" /> :
+                 userTier === 'pro' ? <Star className="w-4 h-4 text-purple-500" /> :
+                 <Zap className="w-4 h-4 text-blue-500" />}
+                <span className="text-sm font-medium">{userTier.charAt(0).toUpperCase() + userTier.slice(1)} Plan</span>
+              </div>
+              <Badge variant="outline">{availablePlatforms.length} platforms</Badge>
+            </div>
+
+            {/* Category Filter */}
+            <div>
+              <label className="text-sm font-medium">Platform Category</label>
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger className="mt-2">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PLATFORM_CATEGORIES.map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Platform Selection */}
+            <div>
+              <label className="text-sm font-medium">Select Platforms ({selectedPlatforms.length} selected)</label>
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 mt-2 max-h-48 overflow-y-auto">
+                {availablePlatforms
+                  .filter(platform => selectedCategory === 'All' || platform.category === selectedCategory)
+                  .map((platform) => {
+                    const isSelected = selectedPlatforms.includes(platform.id);
+                    const isAccessible = platform.active;
+                    
+                    return (
+                      <div 
+                        key={platform.id} 
+                        className={`flex items-center space-x-2 p-2 rounded border ${
+                          isSelected ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-200'
+                        } ${isAccessible ? 'cursor-pointer' : 'opacity-50'}`}
+                        onClick={() => {
+                          if (!isAccessible) return;
+                          if (isSelected) {
+                            setSelectedPlatforms(selectedPlatforms.filter(p => p !== platform.id));
+                          } else {
+                            setSelectedPlatforms([...selectedPlatforms, platform.id]);
+                          }
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => {}} // Handled by onClick above
+                          disabled={!isAccessible}
+                          className="rounded"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <span className={`text-sm ${isAccessible ? 'text-gray-900' : 'text-gray-400'}`}>
+                              {platform.name}
+                            </span>
+                            {isAccessible && isSelected && (
+                              <CheckCircle className="w-4 h-4 text-blue-500" />
+                            )}
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <Badge variant="secondary" className="text-xs">{platform.category}</Badge>
+                            {!isAccessible && (
+                              <Badge variant="outline" className="text-xs">Coming Soon</Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
             </div>
           </div>
         )}
 
         {/* Selected platforms preview */}
         <div className="flex items-center space-x-2">
-          <span className="text-sm text-gray-600">Platforms:</span>
+          <span className="text-sm text-gray-600">Selected platforms:</span>
           <div className="flex gap-1">
-            {selectedPlatforms.map(platform => (
-              <Badge key={platform} variant="secondary" className="text-xs">
-                {platform}
-              </Badge>
-            ))}
+            {selectedPlatforms.map(platformId => {
+              const platform = ALL_PLATFORMS.find(p => p.id === platformId);
+              return (
+                <Badge key={platformId} variant="secondary" className="text-xs">
+                  {platform?.name || platformId}
+                </Badge>
+              );
+            })}
           </div>
         </div>
       </CardContent>

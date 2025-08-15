@@ -53,21 +53,45 @@ export default function InteractiveDemo() {
           break;
           
         case 'build-mvps':
-          // Create MVPs from approved ideas
+          // Create MVPs from approved ideas - use actual idea if available
+          const ideaResponse = await apiRequest('/api/ideas', 'GET');
+          const ideas = Array.isArray(ideaResponse) ? ideaResponse : [];
+          const ideaId = ideas.length > 0 ? ideas[0].id : 'demo-idea-1';
+          
           await apiRequest('/api/mvps', 'POST', {
-            ideaId: 'demo-idea-1',
-            platform: 'Lovable',
-            template: 'saas'
+            name: 'AI-Powered Solution MVP',
+            ideaId: ideaId,
+            description: 'Prototype for solving user pain points with innovative features',
+            platformSelected: 'Lovable',
+            mvpSpec: {
+              coreFeatures: ['User Authentication', 'Problem Tracker', 'Solution Generator'],
+              techStack: ['React', 'Node.js', 'PostgreSQL'],
+              deployment: 'Replit'
+            },
+            estimatedEffortScore: 7,
+            isReadyForUserTest: true
           });
           break;
           
         case 'create-content':
-          // Create content for MVPs
+          // Create content for MVPs - use actual MVP ID if available
+          const mvpResponse = await apiRequest('/api/mvps', 'GET');
+          const mvps = Array.isArray(mvpResponse) ? mvpResponse : [];
+          const mvpId = mvps.length > 0 ? mvps[0].id : 'demo-mvp-1';
+          
           await apiRequest('/api/content', 'POST', {
-            mvpId: 'demo-mvp-1',
+            mvpId: mvpId,
             contentType: 'video',
-            scriptText: 'Demo marketing content for our MVP solution',
-            metadata: { platform: 'social' }
+            scriptText: 'Compelling marketing content for our innovative solution - showcasing the key features and benefits that solve real user pain points.',
+            videoFormatSelected: 'short-form',
+            generationPlatformUsed: 'OpenAI GPT-4',
+            linkToGeneratedAsset: `https://content.demo.com/${mvpId}/video`,
+            isReadyForDistribution: true,
+            metadata: { 
+              platform: 'TikTok',
+              targetAudience: 'entrepreneurs',
+              duration: '30s'
+            }
           });
           break;
       }

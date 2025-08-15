@@ -33,6 +33,12 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
+  subscriptionTier: varchar("subscription_tier").notNull().default("standard"), // standard, pro, elite
+  subscriptionStatus: varchar("subscription_status").notNull().default("active"), // active, cancelled, expired
+  apiQuotaUsed: integer("api_quota_used").notNull().default(0),
+  apiQuotaLimit: integer("api_quota_limit").notNull().default(100), // Standard: 100, Pro: 500, Elite: unlimited
+  platformAccess: text("platform_access").array().notNull().default(['Reddit', 'TikTok', 'Quora']), // Tier-based platform access
+  lastLogin: timestamp("last_login"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

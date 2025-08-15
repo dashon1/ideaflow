@@ -11,15 +11,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware - disabled for demo
   // await setupAuth(app);
 
-  // Auth routes - demo mode
+  // Auth routes - demo mode with tier information
   app.get('/api/auth/user', async (req: any, res) => {
-    // Return demo user for demo purposes
+    // Return demo user with CRM tier data
     res.json({
       id: 'demo-user',
       email: 'demo@example.com',
       firstName: 'Demo',
-      lastName: 'User'
+      lastName: 'User',
+      subscriptionTier: 'standard',
+      subscriptionStatus: 'active',
+      apiQuotaUsed: 23,
+      apiQuotaLimit: 100,
+      platformAccess: ['reddit', 'tiktok', 'quora'],
+      createdAt: new Date().toISOString(),
     });
+  });
+
+  // User tier upgrade endpoint
+  app.patch("/api/users/upgrade-tier", async (req, res) => {
+    try {
+      const { tier } = req.body;
+      
+      if (!['standard', 'pro', 'elite'].includes(tier)) {
+        return res.status(400).json({ message: "Invalid tier" });
+      }
+
+      // Tier configurations
+      const tierConfigs = {
+        standard: { 
+          apiQuota: 100, 
+          platforms: ['reddit', 'tiktok', 'quora'],
+          maxJobsPerDay: 3
+        },
+        pro: { 
+          apiQuota: 500, 
+          platforms: ['reddit', 'tiktok', 'quora', 'linkedin', 'twitter', 'facebook', 'instagram', 'youtube', 'producthunt', 'indiehackers', 'hackernews', 'medium', 'github', 'stackoverflow', 'devto', 'pinterest'],
+          maxJobsPerDay: 10
+        },
+        elite: { 
+          apiQuota: -1, 
+          platforms: ['reddit', 'tiktok', 'quora', 'linkedin', 'twitter', 'facebook', 'instagram', 'youtube', 'producthunt', 'indiehackers', 'hackernews', 'medium', 'substack', 'discord', 'slack', 'telegram', 'whatsapp', 'github', 'stackoverflow', 'devto', 'twitch', 'snapchat', 'clubhouse', 'pinterest', 'tumblr'],
+          maxJobsPerDay: -1
+        }
+      };
+
+      const config = tierConfigs[tier as keyof typeof tierConfigs];
+      
+      // Return upgraded user
+      res.json({
+        id: 'demo-user',
+        email: 'demo@example.com',
+        firstName: 'Demo',
+        lastName: 'User',
+        subscriptionTier: tier,
+        subscriptionStatus: 'active',
+        apiQuotaUsed: 0,
+        apiQuotaLimit: config.apiQuota,
+        platformAccess: config.platforms,
+        createdAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("Error upgrading user tier:", error);
+      res.status(500).json({ message: "Failed to upgrade tier" });
+    }
   });
 
   // Dashboard stats
