@@ -24,8 +24,13 @@ export default function NicheScraper() {
     queryKey: ['/api/auth/user'],
   });
 
-  const userTier = user?.subscriptionTier || 'standard';
+  const userTier = (user as any)?.subscriptionTier || 'standard';
   const availablePlatforms = getPlatformsByTier(userTier as 'standard' | 'pro' | 'elite');
+
+  // Filter platforms that are currently shown by the old platform selection
+  const displayPlatforms = availablePlatforms.filter(platform => 
+    selectedCategory === 'All' || platform.category === selectedCategory
+  );
 
   const popularNiches = [
     'AI & Machine Learning', 'SaaS Tools', 'E-commerce', 'Digital Marketing',
@@ -203,9 +208,7 @@ export default function NicheScraper() {
             <div>
               <label className="text-sm font-medium">Select Platforms ({selectedPlatforms.length} selected)</label>
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 mt-2 max-h-48 overflow-y-auto">
-                {availablePlatforms
-                  .filter(platform => selectedCategory === 'All' || platform.category === selectedCategory)
-                  .map((platform) => {
+                {displayPlatforms.map((platform) => {
                     const isSelected = selectedPlatforms.includes(platform.id);
                     const isAccessible = platform.active;
                     
