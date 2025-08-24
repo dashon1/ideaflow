@@ -41,17 +41,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const tierConfigs = {
         standard: { 
           apiQuota: 100, 
-          platforms: ['reddit', 'tiktok', 'quora'],
+          platforms: ['reddit', 'tiktok', 'quora', 'producthunt', 'indiehackers'],
           maxJobsPerDay: 3
         },
         pro: { 
           apiQuota: 500, 
-          platforms: ['reddit', 'tiktok', 'quora', 'linkedin', 'twitter', 'facebook', 'instagram', 'youtube', 'producthunt', 'indiehackers', 'hackernews', 'medium', 'github', 'stackoverflow', 'devto', 'pinterest'],
+          platforms: ['reddit', 'tiktok', 'quora', 'producthunt', 'indiehackers', 'linkedin', 'twitter', 'facebook', 'instagram', 'youtube', 'glassdoor', 'indeed', 'amazon', 'googleplay', 'appstore', 'trustpilot', 'g2', 'capterra', 'yelp', 'bbb', 'etsy', 'github', 'stackoverflow', 'stackexchange', 'devto', 'medium', 'hackernews'],
           maxJobsPerDay: 10
         },
         elite: { 
           apiQuota: -1, 
-          platforms: ['reddit', 'tiktok', 'quora', 'linkedin', 'twitter', 'facebook', 'instagram', 'youtube', 'producthunt', 'indiehackers', 'hackernews', 'medium', 'substack', 'discord', 'slack', 'telegram', 'whatsapp', 'github', 'stackoverflow', 'devto', 'twitch', 'snapchat', 'clubhouse', 'pinterest', 'tumblr'],
+          platforms: ['reddit', 'tiktok', 'quora', 'producthunt', 'indiehackers', 'linkedin', 'twitter', 'facebook', 'instagram', 'youtube', 'glassdoor', 'indeed', 'amazon', 'googleplay', 'appstore', 'trustpilot', 'g2', 'capterra', 'yelp', 'bbb', 'etsy', 'github', 'stackoverflow', 'stackexchange', 'devto', 'medium', 'hackernews', 'substack', 'pinterest', 'tumblr', 'discord', 'slack', 'telegram', 'whatsapp', 'twitch', 'kick', 'snapchat', 'blind', 'kickstarter', 'indiegogo', 'mastodon', 'bluesky', 'lemmy', 'kbin', 'superuser', 'askubuntu', 'serverfault', 'clubhouse', 'spaces', 'productboard', 'canny', 'uservoice', 'featureupvote'],
           maxJobsPerDay: -1
         }
       };

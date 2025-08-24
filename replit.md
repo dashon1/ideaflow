@@ -29,12 +29,21 @@ Preferred communication style: Simple, everyday language.
 
 ### Database Design
 The schema uses PostgreSQL with the following core entities:
-- **Users**: Stores user profiles (mandatory for Replit Auth)
+- **Users**: Stores user profiles with subscription tier management (standard/pro/elite), API quotas, and platform access controls
 - **Pain Points**: Raw discovered problems from platforms with engagement metrics
 - **Ideas**: AI-processed and summarized product concepts derived from pain points
 - **MVPs**: Generated prototypes linked to approved ideas
 - **Content**: Marketing materials and assets created for ideas
 - **Settings**: User preferences and configuration
+
+### CRM System Architecture
+- **3-Tier Subscription Model**:
+  - **Standard**: 5 platforms (Reddit, TikTok, Quora, Product Hunt, Indie Hackers), 100 API calls/month, 3 jobs/day
+  - **Pro**: 27 platforms (adds professional networks, review sites, developer communities), 500 API calls/month, 10 jobs/day
+  - **Elite**: 50+ platforms (full access including emerging platforms), unlimited API calls, unlimited jobs
+- **Tier Management**: Complete subscription upgrade/downgrade system with real-time platform access updates
+- **Usage Tracking**: API quota monitoring and platform access enforcement
+- **Individual Settings**: Per-user configuration for scraping preferences, notifications, and integrations
 
 ### AI Integration
 - **OpenAI Integration**: Uses GPT-4o for pain point summarization and classification
@@ -42,9 +51,20 @@ The schema uses PostgreSQL with the following core entities:
 - **Content Generation**: Planned integration with multiple AI services (Gemini Pro, Claude) for diverse content creation
 
 ### Scraper Architecture
-- **Multi-Platform Support**: Modular scraper for Reddit, TikTok, Quora, YouTube, LinkedIn, etc.
+- **Multi-Platform Support**: Comprehensive scraper covering 50+ platforms including:
+  - **Social Media**: Reddit, TikTok, Twitter/X, Facebook, Instagram, LinkedIn, YouTube
+  - **Review Platforms**: Amazon, Google Play, App Store, Trustpilot, G2, Capterra, Yelp, BBB, Etsy
+  - **Developer Communities**: GitHub Issues, Stack Overflow, Stack Exchange, Dev.to, Hacker News
+  - **Professional Networks**: LinkedIn, Glassdoor, Indeed, Blind
+  - **Content Platforms**: Medium, Substack, Pinterest, Tumblr
+  - **Messaging & Communities**: Discord, Slack, Telegram, WhatsApp Communities
+  - **Streaming**: Twitch, Kick, Snapchat
+  - **Innovation**: Kickstarter, Indiegogo, ProductBoard, Canny, UserVoice
+  - **Emerging**: Mastodon, Bluesky, Lemmy, Kbin
+- **Tier-Based Access**: Standard (5 platforms), Pro (27 platforms), Elite (50+ platforms)
 - **Dual Modes**: Discovery mode for trending problems and Niche mode for targeted searches
 - **Mock Implementation**: Currently uses mock data with planned integration to actual platform APIs
+- **Category Filtering**: Platforms organized by Social, Professional, Reviews, Development, etc.
 - **Deduplication**: Built-in scoring and filtering to prevent duplicate content
 
 ### MVP Generation Pipeline

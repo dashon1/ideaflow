@@ -1,0 +1,57 @@
+Amazon Reviews	Product Feedback	Problems solved or unsolved by physical goods
+
+GitHub Issues	Developer Tracker	Feature requests, bugs, implementation struggles
+
+Facebook Groups	Niche Communities	Personal frustrations in shared-interest spaces
+
+Discord Communities	Real-time Chat	Real-time pain points in community convos
+
+LinkedIn Posts	Professional Space	Business/employee workflow pain points
+
+Glassdoor Reviews	Workplace Review	Company-level and workflow process pain points
+Google Play Reviews
+Trustpilot / G2 / Capterra — Software & service reviews with pain points, unmet needs, and wish lists.
+
+Better Business Bureau (BBB) Complaints — Formal consumer complaints against businesses.
+
+Yelp Reviews — Local service/product complaints, usability frustrations.
+
+Developer & Technical Communities
+
+Stack Overflow & Stack Exchange — Problem-solving Q&A, error struggles, and workarounds.
+
+Dev.to / Medium Tech Blogs — Posts describing developer pains, missing features, and hacks.
+
+Substack Newsletters (Comments) — Community feedback on tech and workflow challenges.
+
+Social Platforms & Niche Spaces
+
+Instagram Comments / Threads — Quick rants and complaints under brand/product posts.
+
+Telegram Groups / WhatsApp Communities — Semi-private but highly active pain-point sharing.
+
+Twitch Chat & Streams — Live frustrations and real-time user experiences.
+
+Kick / Other Streaming Platforms — Similar to Twitch, with raw community reactions.
+
+Workplace & Career
+
+Indeed Company Reviews — Workflow and management frustrations.
+
+Blind (Anonymous Workplace App) — Employee rants, inefficiencies, and tool/workflow gaps.
+
+Consumer & Hobbyist Communities
+
+Etsy Reviews — Product improvement requests and unmet expectations.
+
+Pinterest Comments — Frustrations about DIY guides or incomplete solutions.
+
+Specialized Forums (e.g., StackExchange sub-sites like SuperUser, AskUbuntu) — Niche technical struggles.
+
+Emerging Spaces
+
+Subreddit Spin-offs (e.g., Lemmy, Kbin) — Reddit alternatives with similar user behavior.
+
+Mastodon / Bluesky — Microblogging frustrations in early adopter tech spaces.
+
+Kickstarter / Indiegogo Comments
