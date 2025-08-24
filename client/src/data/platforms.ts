@@ -82,13 +82,13 @@ export const ALL_PLATFORMS = [
 
 export const TIER_LIMITS = {
   standard: {
-    platforms: ALL_PLATFORMS.filter(p => p.tier === 'standard').map(p => p.id),
+    platforms: ALL_PLATFORMS.map(p => p.id), // Give standard access to all platforms for demo
     maxJobsPerDay: 3,
     apiQuota: 100,
-    features: ['Basic scraping', 'Pain point discovery', 'Simple analytics']
+    features: ['Full platform access for demo', 'Pain point discovery', 'Simple analytics']
   },
   pro: {
-    platforms: ALL_PLATFORMS.filter(p => ['standard', 'pro'].includes(p.tier)).map(p => p.id),
+    platforms: ALL_PLATFORMS.map(p => p.id), // All platforms
     maxJobsPerDay: 10,
     apiQuota: 500,
     features: ['Advanced scraping', 'AI analysis', 'MVP generation', 'Content creation']
