@@ -173,20 +173,63 @@ export default function NicheScraper() {
           </div>
         </div>
 
-        {/* Platform Selection */}
-        {isExpanded && (
-          <div className="space-y-4 pt-2 border-t border-blue-200">
-            {/* Tier Status */}
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div className="flex items-center space-x-2">
-                {userTier === 'elite' ? <Crown className="w-4 h-4 text-yellow-500" /> :
-                 userTier === 'pro' ? <Star className="w-4 h-4 text-purple-500" /> :
-                 <Zap className="w-4 h-4 text-blue-500" />}
-                <span className="text-sm font-medium">{userTier.charAt(0).toUpperCase() + userTier.slice(1)} Plan</span>
-              </div>
-              <Badge variant="outline">{availablePlatforms.length} platforms</Badge>
+        {/* Platform Selection - Always show but expand for more options */}
+        <div className="space-y-4 pt-2 border-t border-blue-200">
+          {/* Tier Status */}
+          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div className="flex items-center space-x-2">
+              {userTier === 'elite' ? <Crown className="w-4 h-4 text-yellow-500" /> :
+               userTier === 'pro' ? <Star className="w-4 h-4 text-purple-500" /> :
+               <Zap className="w-4 h-4 text-blue-500" />}
+              <span className="text-sm font-medium">{userTier.charAt(0).toUpperCase() + userTier.slice(1)} Plan</span>
             </div>
+            <Badge variant="outline">{availablePlatforms.length} platforms available</Badge>
+          </div>
 
+          {/* Quick Platform Preview */}
+          <div>
+            <label className="text-sm font-medium">Quick Select ({selectedPlatforms.length} selected)</label>
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 mt-2">
+              {availablePlatforms.slice(0, 6).map((platform) => {
+                const isSelected = selectedPlatforms.includes(platform.id);
+                return (
+                  <div 
+                    key={platform.id} 
+                    className={`flex items-center space-x-2 p-2 rounded border cursor-pointer ${
+                      isSelected ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-200'
+                    }`}
+                    onClick={() => {
+                      if (isSelected) {
+                        setSelectedPlatforms(selectedPlatforms.filter(p => p !== platform.id));
+                      } else {
+                        setSelectedPlatforms([...selectedPlatforms, platform.id]);
+                      }
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => {}}
+                      className="rounded"
+                    />
+                    <span className="text-sm">{platform.name}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="mt-2"
+              onClick={() => setIsExpanded(!isExpanded)}
+            >
+              {isExpanded ? 'Show Less' : `Show All ${availablePlatforms.length} Platforms`}
+            </Button>
+          </div>
+
+        {/* Expanded Platform Selection */}
+        {isExpanded && (
+          <div className="space-y-3">
             {/* Category Filter */}
             <div>
               <label className="text-sm font-medium">Platform Category</label>
@@ -204,10 +247,10 @@ export default function NicheScraper() {
               </Select>
             </div>
 
-            {/* Platform Selection */}
+            {/* Full Platform Grid */}
             <div>
-              <label className="text-sm font-medium">Select Platforms ({selectedPlatforms.length} selected)</label>
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 mt-2 max-h-48 overflow-y-auto">
+              <label className="text-sm font-medium">All Available Platforms ({selectedPlatforms.length} selected)</label>
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 mt-2 max-h-64 overflow-y-auto">
                 {displayPlatforms.map((platform) => {
                     const isSelected = selectedPlatforms.includes(platform.id);
                     const isAccessible = platform.active;
@@ -257,6 +300,7 @@ export default function NicheScraper() {
             </div>
           </div>
         )}
+        </div>
 
         {/* Selected platforms preview */}
         <div className="flex items-center space-x-2">
