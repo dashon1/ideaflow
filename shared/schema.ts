@@ -124,6 +124,65 @@ export const content = pgTable("content", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// AI Agent configurations and status
+export const agents = pgTable("agents", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
+  type: varchar("type").notNull(), // scraper, summarizer, classifier, storage, mvp_designer, app_builder, content_designer, video_generator, marketing, market_tester
+  status: varchar("status").default("queued"), // queued, processing, completed, failed
+  isActive: boolean("is_active").default(true),
+  configuration: jsonb("configuration"),
+  lastRunAt: timestamp("last_run_at"),
+  processingTime: integer("processing_time"), // in milliseconds
+  tasksCompleted: integer("tasks_completed").default(0),
+  tasksQueued: integer("tasks_queued").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// AI Agent task queue
+export const agentTasks = pgTable("agent_tasks", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  agentId: varchar("agent_id").references(() => agents.id),
+  type: varchar("type").notNull(),
+  status: varchar("status").default("queued"), // queued, processing, completed, failed
+  priority: integer("priority").default(1),
+  inputData: jsonb("input_data"),
+  outputData: jsonb("output_data"),
+  processingTime: integer("processing_time"),
+  errorMessage: text("error_message"),
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// User feature permissions (individual controls)
+export const userFeatures = pgTable("user_features", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id),
+  featureType: varchar("feature_type").notNull(), // llm, image_generation, video_generation, audio_generation, marketing_tools, crm_integration
+  featureName: varchar("feature_name").notNull(), // gemini_pro, gpt4, midjourney, runway, elevenlabs, etc.
+  isEnabled: boolean("is_enabled").default(false),
+  usageQuota: integer("usage_quota").default(0),
+  usageCount: integer("usage_count").default(0),
+  lastUsedAt: timestamp("last_used_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Global system tools and models
+export const globalTools = pgTable("global_tools", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
+  type: varchar("type").notNull(), // LLM, Image, Video, Audio, Marketing, CRM
+  isEnabled: boolean("is_enabled").default(true),
+  apiEndpoint: text("api_endpoint"),
+  configuration: jsonb("configuration"),
+  tier: varchar("tier").notNull(), // standard, pro, elite
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // System settings and configurations
 export const settings = pgTable("settings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -177,3 +236,34 @@ export const insertScrapingJobSchema = createInsertSchema(scrapingJobs).omit({
 });
 export type InsertScrapingJob = z.infer<typeof insertScrapingJobSchema>;
 export type ScrapingJob = typeof scrapingJobs.$inferSelect;
+
+export const insertAgentSchema = createInsertSchema(agents).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertAgent = z.infer<typeof insertAgentSchema>;
+export type Agent = typeof agents.$inferSelect;
+
+export const insertAgentTaskSchema = createInsertSchema(agentTasks).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertAgentTask = z.infer<typeof insertAgentTaskSchema>;
+export type AgentTask = typeof agentTasks.$inferSelect;
+
+export const insertUserFeatureSchema = createInsertSchema(userFeatures).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertUserFeature = z.infer<typeof insertUserFeatureSchema>;
+export type UserFeature = typeof userFeatures.$inferSelect;
+
+export const insertGlobalToolSchema = createInsertSchema(globalTools).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertGlobalTool = z.infer<typeof insertGlobalToolSchema>;
+export type GlobalTool = typeof globalTools.$inferSelect;

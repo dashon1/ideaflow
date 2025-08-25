@@ -7,17 +7,27 @@ import {
   FileText, 
   BarChart3, 
   Settings,
-  Zap
+  Zap,
+  Activity,
+  Bot,
+  Users,
+  Globe
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navigation = [
-  { name: "Dashboard", href: "/", icon: LayoutDashboard },
-  { name: "Scraper", href: "/scraper", icon: Search },
+  { name: "Overview", href: "/", icon: LayoutDashboard },
   { name: "Ideas", href: "/ideas", icon: Lightbulb },
-  { name: "MVP Builder", href: "/mvp", icon: Rocket },
-  { name: "Content", href: "/content", icon: FileText },
+  { name: "MVPs", href: "/mvp", icon: Rocket },
+  { name: "Content Assets", href: "/content", icon: FileText },
+  { name: "Marketing", href: "/marketing", icon: BarChart3 },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
+  { name: "Idea Discovery", href: "/ideas", icon: Lightbulb },
+  { name: "Scraper", href: "/scraper", icon: Search },
+  { name: "Pipeline", href: "/pipeline", icon: Activity },
+  { name: "Agent Management", href: "/agent-management", icon: Bot },
+  { name: "CRM", href: "/crm", icon: Users },
+  { name: "Global Settings", href: "/global-settings", icon: Globe },
 ];
 
 export default function Sidebar() {

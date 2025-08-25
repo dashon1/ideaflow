@@ -13,6 +13,10 @@ import MVP from "@/pages/mvp";
 import Content from "@/pages/content";
 import Analytics from "@/pages/analytics";
 import Settings from "@/pages/settings";
+import Pipeline from "@/pages/pipeline";
+import AgentManagement from "@/pages/agent-management";
+import CRM from "@/pages/crm";
+import GlobalSettings from "@/pages/global-settings";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -26,6 +30,10 @@ function Router() {
       <Route path="/mvp" component={MVP} />
       <Route path="/content" component={Content} />
       <Route path="/analytics" component={Analytics} />
+      <Route path="/pipeline" component={Pipeline} />
+      <Route path="/agent-management" component={AgentManagement} />
+      <Route path="/crm" component={CRM} />
+      <Route path="/global-settings" component={GlobalSettings} />
       <Route path="/settings" component={Settings} />
       <Route component={NotFound} />
     </Switch>

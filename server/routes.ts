@@ -395,6 +395,235 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Pipeline monitoring routes
+  app.get("/api/pipeline/status", async (req, res) => {
+    try {
+      // Get recent scraping jobs for pipeline status
+      const recentJobs = await storage.getScrapingJobs(5);
+      
+      // Mock pipeline data for demonstration
+      const pipelineData = {
+        totalJobs: recentJobs.length,
+        activeJobs: recentJobs.filter(job => job.status === 'running').length,
+        completedJobs: recentJobs.filter(job => job.status === 'completed').length,
+        failedJobs: recentJobs.filter(job => job.status === 'failed').length,
+        currentTasks: recentJobs.filter(job => job.status === 'running').map(job => ({
+          id: job.id,
+          agent: job.currentAgent,
+          status: job.status,
+          progress: job.progress || 0,
+          estimatedTimeRemaining: Math.max(0, Math.round((100 - (job.progress || 0)) * 0.3)) + " minutes"
+        })),
+        agents: [
+          { name: "Scraper Agent", status: "active", tasksProcessed: 42 },
+          { name: "Pain Point Summarizer", status: "active", tasksProcessed: 38 },
+          { name: "Content Agent", status: "idle", tasksProcessed: 15 },
+          { name: "Template Discovery Agent", status: "idle", tasksProcessed: 12 },
+          { name: "Marketing Agent", status: "idle", tasksProcessed: 8 }
+        ]
+      };
+      
+      res.json(pipelineData);
+    } catch (error) {
+      console.error("Error fetching pipeline status:", error);
+      res.status(500).json({ message: "Failed to fetch pipeline status" });
+    }
+  });
+
+  // Agent management routes
+  app.get("/api/agents", async (req, res) => {
+    try {
+      // Mock agent configurations for demonstration
+      const agents = [
+        {
+          id: "scraper",
+          name: "Scraper Agent",
+          type: "scraper",
+          isActive: true,
+          configuration: {
+            prioritizedPlatforms: ["Reddit", "Quora", "TikTok", "Twitter/X", "Product Hunt"],
+            proExtenders: ["Discord", "Indie Hackers"],
+            resultsPerPlatform: 10,
+            nicheFilter: "Standard Niches"
+          }
+        },
+        {
+          id: "summarizer",
+          name: "Pain Point Summarizer Agent",
+          type: "summarizer", 
+          isActive: true,
+          configuration: {
+            systemPrompt: "You are an AI assistant tasked with summarizing user-generated content..."
+          }
+        },
+        {
+          id: "content",
+          name: "Content Agent",
+          type: "content",
+          isActive: true,
+          configuration: {
+            prioritizedLLM: "Gemini (Free Tier)",
+            imageGeneration: "Gemini (Free Tier)",
+            videoGeneration: "Basic Gen (Watermarked)",
+            audioGeneration: "Standard Voice (Free Tier)"
+          }
+        }
+      ];
+      
+      res.json(agents);
+    } catch (error) {
+      console.error("Error fetching agents:", error);
+      res.status(500).json({ message: "Failed to fetch agents" });
+    }
+  });
+
+  app.patch("/api/agents/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const configuration = req.body;
+      
+      // In a real implementation, you'd save this to the database
+      res.json({ 
+        message: `Agent ${id} configuration updated successfully`,
+        configuration 
+      });
+    } catch (error) {
+      console.error("Error updating agent configuration:", error);
+      res.status(500).json({ message: "Failed to update agent configuration" });
+    }
+  });
+
+  // User management routes for CRM
+  app.get("/api/users", async (req, res) => {
+    try {
+      // Mock users for demonstration
+      const users = [
+        {
+          id: "1",
+          name: "Alice Johnson",
+          email: "alice@example.com",
+          plan: "Pro",
+          proFeaturesEnabled: 23,
+          totalProFeatures: 23,
+          features: {
+            geminiPro: true,
+            gpt4: true,
+            claudeOpus: true,
+            midjourney: true,
+            elevenLabs: true,
+            goHighLevel: true
+          }
+        },
+        {
+          id: "2",
+          name: "Bob Williams", 
+          email: "bob@example.com",
+          plan: "Free",
+          proFeaturesEnabled: 0,
+          totalProFeatures: 23,
+          features: {}
+        }
+      ];
+      
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  app.patch("/api/users/:id/features", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const features = req.body;
+      
+      // In a real implementation, you'd save this to the database
+      res.json({ 
+        message: `User ${id} features updated successfully`,
+        features 
+      });
+    } catch (error) {
+      console.error("Error updating user features:", error);
+      res.status(500).json({ message: "Failed to update user features" });
+    }
+  });
+
+  // Global settings routes
+  app.get("/api/global-settings", async (req, res) => {
+    try {
+      // Mock global settings for demonstration
+      const globalSettings = {
+        adminControls: {
+          enableAllProFeatures: true
+        },
+        contentAgent: {
+          llm: {
+            geminiPro: true,
+            gpt4: false,
+            claudeOpus: false
+          },
+          imageGeneration: {
+            midjourney: true,
+            stableDiffusion: false,
+            dalle3: false,
+            falAI: true
+          },
+          videoGeneration: {
+            runway: true,
+            googleVeo3: false,
+            createomate: false,
+            json2Video: false,
+            falAIVideo: false
+          }
+        },
+        marketingAgent: {
+          audio: {
+            elevenLabs: true,
+            piAPI: false
+          },
+          marketing: {
+            genspark: true,
+            manus: false,
+            minimax: false,
+            aiPlan: false
+          },
+          crm: {
+            goHighLevel: true,
+            marketingBlocksAI: true,
+            agentXHelp: false,
+            n8nAutomation: false
+          }
+        },
+        tools: [
+          { id: "1", name: "GPT-4", type: "LLM", isEnabled: true },
+          { id: "2", name: "Claude Opus", type: "LLM", isEnabled: true },
+          { id: "3", name: "Midjourney", type: "Image", isEnabled: true },
+          { id: "4", name: "Runway", type: "Video", isEnabled: true }
+        ]
+      };
+      
+      res.json(globalSettings);
+    } catch (error) {
+      console.error("Error fetching global settings:", error);
+      res.status(500).json({ message: "Failed to fetch global settings" });
+    }
+  });
+
+  app.patch("/api/global-settings", async (req, res) => {
+    try {
+      const settings = req.body;
+      
+      // In a real implementation, you'd save this to the database
+      res.json({ 
+        message: "Global settings updated successfully",
+        settings 
+      });
+    } catch (error) {
+      console.error("Error updating global settings:", error);
+      res.status(500).json({ message: "Failed to update global settings" });
+    }
+  });
+
   // Sample data regeneration route
   app.post("/api/admin/regenerate-sample-data", async (req: any, res) => {
     try {
