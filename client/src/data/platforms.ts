@@ -125,12 +125,8 @@ export const PLATFORM_CATEGORIES = [
 ] as const;
 
 export function getPlatformsByTier(tier: 'standard' | 'pro' | 'elite') {
-  return ALL_PLATFORMS.filter(platform => {
-    if (tier === 'standard') return platform.tier === 'standard';
-    if (tier === 'pro') return ['standard', 'pro'].includes(platform.tier);
-    if (tier === 'elite') return true;
-    return false;
-  });
+  // For demo purposes, all tiers get access to all platforms
+  return ALL_PLATFORMS;
 }
 
 export function getPlatformsByCategory(category: string) {
