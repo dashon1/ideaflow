@@ -1,199 +1,260 @@
-import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import { FileText, Video, Image, Volume2, Loader, Plus } from "lucide-react";
+import Sidebar from "@/components/sidebar";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { 
+  Plus,
+  FileText,
+  Video,
+  Image,
+  Download,
+  Eye,
+  Calendar,
+  Users
+} from "lucide-react";
+
+interface ContentAsset {
+  id: string;
+  name: string;
+  type: "Template" | "Marketing" | "Design" | "Documentation";
+  description: string;
+  fileSize: string;
+  downloads: number;
+  views: number;
+  createdAt: string;
+  category?: string;
+}
 
 export default function Content() {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
-
-  const { data: content = [] } = useQuery({
-    queryKey: ['/api/content'],
-  });
-
-  const { data: ideas = [] } = useQuery({
-    queryKey: ['/api/ideas'],
-  });
-
-  const createContentMutation = useMutation({
-    mutationFn: async () => {
-      // Get the first approved idea to create content for
-      const approvedIdea = ideas.find((idea: any) => idea.status === 'approved') || ideas[0];
-      if (!approvedIdea) {
-        throw new Error('No approved ideas available for content creation');
-      }
-      
-      const response = await apiRequest('/api/content', 'POST', { 
-        mvpId: approvedIdea.id,
-        contentType: 'text',
-        scriptText: `Create marketing content for: ${approvedIdea.summaryText}`,
-        metadata: { platform: 'OpenAI' }
-      });
-      return await response.json();
+  const { isAuthenticated, isLoading } = useAuth();
+  
+  // Mock content assets data
+  const [assets] = useState<ContentAsset[]>([
+    {
+      id: "1",
+      name: "SaaS Landing Page Template",
+      type: "Template",
+      description: "High-converting landing page template with modern design",
+      fileSize: "2.4 MB",
+      downloads: 1247,
+      views: 5832,
+      createdAt: "1/14/2024",
+      category: "SaaS"
     },
-    onSuccess: (data) => {
-      toast({
-        title: "Content Created!",
-        description: "Successfully generated marketing content for your idea.",
-      });
-      queryClient.invalidateQueries({ queryKey: ['/api/content'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
+    {
+      id: "2", 
+      name: "Product Demo Video",
+      type: "Marketing",
+      description: "Professional product demonstration video template",
+      fileSize: "45.2 MB",
+      downloads: 892,
+      views: 3421,
+      createdAt: "2/2/2024",
+      category: "Video"
     },
-    onError: (error: any) => {
+    {
+      id: "3",
+      name: "User Onboarding Flow",
+      type: "Design",
+      description: "Complete user onboarding design system",
+      fileSize: "8.7 MB",
+      downloads: 634,
+      views: 2105,
+      createdAt: "2/11/2024",
+      category: "UX"
+    },
+    {
+      id: "4",
+      name: "API Documentation Template",
+      type: "Documentation", 
+      description: "Comprehensive API documentation structure",
+      fileSize: "1.2 MB",
+      downloads: 421,
+      views: 1876,
+      createdAt: "2/19/2024",
+      category: "Technical"
+    }
+  ]);
+
+  const handleUploadAsset = () => {
+    toast({
+      title: "Upload Asset",
+      description: "Asset upload modal would open here.",
+    });
+  };
+
+  const handlePreview = (assetId: string) => {
+    toast({
+      title: "Preview Asset",
+      description: `Opening preview for asset ${assetId}`,
+    });
+  };
+
+  const handleDownload = (assetId: string) => {
+    toast({
+      title: "Download Started",
+      description: `Downloading asset ${assetId}`,
+    });
+  };
+
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case "Template": return <FileText className="w-4 h-4 text-blue-600" />;
+      case "Marketing": return <Video className="w-4 h-4 text-green-600" />;
+      case "Design": return <Image className="w-4 h-4 text-purple-600" />;
+      case "Documentation": return <FileText className="w-4 h-4 text-orange-600" />;
+      default: return <FileText className="w-4 h-4 text-gray-600" />;
+    }
+  };
+
+  const getTypeBadgeColor = (type: string) => {
+    switch (type) {
+      case "Template": return "bg-blue-100 text-blue-800";
+      case "Marketing": return "bg-green-100 text-green-800";
+      case "Design": return "bg-purple-100 text-purple-800";
+      case "Documentation": return "bg-orange-100 text-orange-800";
+      default: return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  // Redirect to home if not authenticated
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
       toast({
-        title: "Content Creation Failed",
-        description: error.message || "Failed to create content. Please try again.",
+        title: "Unauthorized",
+        description: "You are logged out. Logging in again...",
         variant: "destructive",
       });
-    },
-  });
+      setTimeout(() => {
+        window.location.href = "/api/login";
+      }, 500);
+      return;
+    }
+  }, [isAuthenticated, isLoading, toast]);
 
-  const textContent = content.filter((c: any) => c.type === 'text');
-  const videoContent = content.filter((c: any) => c.type === 'video');
-  const imageContent = content.filter((c: any) => c.type === 'image');
-  const audioContent = content.filter((c: any) => c.type === 'audio');
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading content assets...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Content Creation</h1>
-          <p className="text-gray-600">AI-generated marketing materials for your MVPs</p>
-        </div>
-        <Button 
-          onClick={() => createContentMutation.mutate()}
-          disabled={createContentMutation.isPending || ideas.length === 0}
-          className="bg-primary-600 hover:bg-primary-700"
-        >
-          {createContentMutation.isPending ? (
-            <Loader className="w-4 h-4 mr-2 animate-spin" />
-          ) : (
-            <FileText className="w-4 h-4 mr-2" />
-          )}
-          {createContentMutation.isPending ? 'Creating...' : 'Create Content'}
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <FileText className="w-5 h-5" />
-              <span>Text Content</span>
-            </CardTitle>
-            <CardDescription>Blog posts, social media, ads</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <p className="text-sm text-gray-600">
-                Generate compelling text content for marketing campaigns.
-              </p>
-              <div className="text-2xl font-bold text-gray-900">{textContent.length}</div>
-              <div className="space-y-2">
-                {textContent.slice(0, 2).map((content: any) => (
-                  <div key={content.id} className="flex items-center justify-between text-xs">
-                    <span className="text-gray-600 truncate">{content.title}</span>
-                    <Badge variant="secondary" className="ml-2">{content.status}</Badge>
-                  </div>
-                ))}
-                {textContent.length === 0 && (
-                  <p className="text-xs text-gray-500">No text content yet</p>
-                )}
-              </div>
+    <div className="flex h-screen bg-gray-50">
+      <Sidebar />
+      
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Header */}
+        <header className="bg-white border-b border-gray-200 px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Content Assets</h1>
+              <p className="text-gray-600 mt-1">Manage your reusable templates, designs, and marketing materials</p>
             </div>
-          </CardContent>
-        </Card>
+            <Button 
+              onClick={handleUploadAsset}
+              className="flex items-center space-x-2"
+              data-testid="button-upload-asset"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Upload Asset</span>
+            </Button>
+          </div>
+        </header>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Video className="w-5 h-5" />
-              <span>Video Content</span>
-            </CardTitle>
-            <CardDescription>Promotional videos and demos</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <p className="text-sm text-gray-600">
-                Create product demo videos and promotional content.
-              </p>
-              <div className="text-2xl font-bold text-gray-900">{videoContent.length}</div>
-              <div className="space-y-2">
-                {videoContent.slice(0, 2).map((content: any) => (
-                  <div key={content.id} className="flex items-center justify-between text-xs">
-                    <span className="text-gray-600 truncate">{content.title}</span>
-                    <Badge variant="secondary" className="ml-2">{content.status}</Badge>
+        {/* Main Content */}
+        <main className="flex-1 overflow-auto p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {assets.map((asset) => (
+              <Card key={asset.id} className="hover:shadow-md transition-shadow">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center space-x-2">
+                      {getTypeIcon(asset.type)}
+                      <Badge className={`text-xs ${getTypeBadgeColor(asset.type)}`}>
+                        {asset.type}
+                      </Badge>
+                    </div>
+                    <span className="text-xs text-gray-500">{asset.fileSize}</span>
                   </div>
-                ))}
-                {videoContent.length === 0 && (
-                  <p className="text-xs text-gray-500">No video content yet</p>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Image className="w-5 h-5" />
-              <span>Visual Assets</span>
-            </CardTitle>
-            <CardDescription>Graphics, logos, illustrations</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <p className="text-sm text-gray-600">
-                Generate visual assets and branding materials.
-              </p>
-              <div className="text-2xl font-bold text-gray-900">{imageContent.length}</div>
-              <div className="space-y-2">
-                {imageContent.slice(0, 2).map((content: any) => (
-                  <div key={content.id} className="flex items-center justify-between text-xs">
-                    <span className="text-gray-600 truncate">{content.title}</span>
-                    <Badge variant="secondary" className="ml-2">{content.status}</Badge>
+                  <CardTitle className="text-base leading-tight">{asset.name}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-sm text-gray-600 line-clamp-2">{asset.description}</p>
+                  
+                  <div className="flex items-center justify-between text-xs text-gray-500">
+                    <div className="flex items-center space-x-3">
+                      <div className="flex items-center space-x-1">
+                        <Download className="w-3 h-3" />
+                        <span>{asset.downloads.toLocaleString()}</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Eye className="w-3 h-3" />
+                        <span>{asset.views.toLocaleString()}</span>
+                      </div>
+                    </div>
                   </div>
-                ))}
-                {imageContent.length === 0 && (
-                  <p className="text-xs text-gray-500">No visual content yet</p>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Volume2 className="w-5 h-5" />
-              <span>Audio Content</span>
-            </CardTitle>
-            <CardDescription>Voiceovers and podcasts</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <p className="text-sm text-gray-600">
-                Create professional voiceovers and audio content.
-              </p>
-              <div className="text-2xl font-bold text-gray-900">{audioContent.length}</div>
-              <div className="space-y-2">
-                {audioContent.slice(0, 2).map((content: any) => (
-                  <div key={content.id} className="flex items-center justify-between text-xs">
-                    <span className="text-gray-600 truncate">{content.title}</span>
-                    <Badge variant="secondary" className="ml-2">{content.status}</Badge>
+                  
+                  <div className="text-xs text-gray-500">
+                    Created: {asset.createdAt}
                   </div>
-                ))}
-                {audioContent.length === 0 && (
-                  <p className="text-xs text-gray-500">No audio content yet</p>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+                  
+                  <div className="flex space-x-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex-1 text-xs"
+                      onClick={() => handlePreview(asset.id)}
+                      data-testid={`button-preview-${asset.id}`}
+                    >
+                      <Eye className="w-3 h-3 mr-1" />
+                      Preview
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      className="flex-1 text-xs bg-gray-900 hover:bg-gray-800"
+                      onClick={() => handleDownload(asset.id)}
+                      data-testid={`button-download-${asset.id}`}
+                    >
+                      <Download className="w-3 h-3 mr-1" />
+                      Download
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+            
+            {/* Add New Asset Card */}
+            <Card 
+              className="border-dashed border-2 border-gray-300 hover:border-gray-400 cursor-pointer transition-colors"
+              onClick={handleUploadAsset}
+            >
+              <CardContent className="flex flex-col items-center justify-center h-full p-6 text-center">
+                <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
+                  <Plus className="w-6 h-6 text-gray-600" />
+                </div>
+                <h3 className="font-medium text-gray-900 mb-2">Upload New Asset</h3>
+                <p className="text-sm text-gray-600">
+                  Add templates, designs, or marketing materials to your library
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </main>
       </div>
     </div>
   );
