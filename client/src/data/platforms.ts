@@ -70,7 +70,7 @@ export const ALL_PLATFORMS = [
   { id: 'serverfault', name: 'Server Fault', category: 'Development', tier: 'elite', active: true },
   
   // Audio & Voice (Elite Tier)
-  { id: 'clubhouse', name: 'Clubhouse', category: 'Audio', tier: 'elite', active: false },
+  { id: 'clubhouse', name: 'Clubhouse', category: 'Audio', tier: 'elite', active: true },
   { id: 'spaces', name: 'Twitter Spaces', category: 'Audio', tier: 'elite', active: true },
   
   // Niche Forums & Communities (Elite Tier)
