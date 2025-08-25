@@ -11,6 +11,7 @@ export const ALL_PLATFORMS = [
   { id: 'linkedin', name: 'LinkedIn', category: 'Professional', tier: 'pro', active: true },
   { id: 'twitter', name: 'Twitter/X', category: 'Social', tier: 'pro', active: true },
   { id: 'facebook', name: 'Facebook', category: 'Social', tier: 'pro', active: true },
+  { id: 'facebookgroups', name: 'Facebook Groups', category: 'Community', tier: 'pro', active: true },
   { id: 'instagram', name: 'Instagram', category: 'Visual', tier: 'pro', active: true },
   { id: 'youtube', name: 'YouTube', category: 'Video', tier: 'pro', active: true },
   { id: 'glassdoor', name: 'Glassdoor', category: 'Professional', tier: 'pro', active: true },

@@ -23,7 +23,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       subscriptionStatus: 'active',
       apiQuotaUsed: 23,
       apiQuotaLimit: 100,
-      platformAccess: ['reddit', 'tiktok', 'quora', 'producthunt', 'indiehackers', 'linkedin', 'twitter', 'facebook', 'instagram', 'youtube', 'glassdoor', 'indeed', 'amazon', 'googleplay', 'appstore', 'trustpilot', 'g2', 'capterra', 'yelp', 'bbb', 'etsy', 'github', 'stackoverflow', 'stackexchange', 'devto', 'medium', 'hackernews', 'substack', 'pinterest', 'tumblr', 'discord', 'slack', 'telegram', 'whatsapp', 'twitch', 'kick', 'snapchat', 'blind', 'kickstarter', 'indiegogo', 'mastodon', 'bluesky', 'lemmy', 'kbin', 'superuser', 'askubuntu', 'serverfault', 'clubhouse', 'spaces', 'productboard', 'canny', 'uservoice', 'featureupvote'],
+      platformAccess: ['reddit', 'tiktok', 'quora', 'producthunt', 'indiehackers', 'linkedin', 'twitter', 'facebook', 'facebookgroups', 'instagram', 'youtube', 'glassdoor', 'indeed', 'amazon', 'googleplay', 'appstore', 'trustpilot', 'g2', 'capterra', 'yelp', 'bbb', 'etsy', 'github', 'stackoverflow', 'stackexchange', 'devto', 'medium', 'hackernews', 'substack', 'pinterest', 'tumblr', 'discord', 'slack', 'telegram', 'whatsapp', 'twitch', 'kick', 'snapchat', 'blind', 'kickstarter', 'indiegogo', 'mastodon', 'bluesky', 'lemmy', 'kbin', 'superuser', 'askubuntu', 'serverfault', 'clubhouse', 'spaces', 'productboard', 'canny', 'uservoice', 'featureupvote'],
       createdAt: new Date().toISOString(),
     });
   });
@@ -41,17 +41,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const tierConfigs = {
         standard: { 
           apiQuota: 100, 
-          platforms: ['reddit', 'tiktok', 'quora', 'producthunt', 'indiehackers', 'linkedin', 'twitter', 'facebook', 'instagram', 'youtube', 'glassdoor', 'indeed', 'amazon', 'googleplay', 'appstore', 'trustpilot', 'g2', 'capterra', 'yelp', 'bbb', 'etsy', 'github', 'stackoverflow', 'stackexchange', 'devto', 'medium', 'hackernews', 'substack', 'pinterest', 'tumblr', 'discord', 'slack', 'telegram', 'whatsapp', 'twitch', 'kick', 'snapchat', 'blind', 'kickstarter', 'indiegogo', 'mastodon', 'bluesky', 'lemmy', 'kbin', 'superuser', 'askubuntu', 'serverfault', 'clubhouse', 'spaces', 'productboard', 'canny', 'uservoice', 'featureupvote'],
+          platforms: ['reddit', 'tiktok', 'quora', 'producthunt', 'indiehackers', 'linkedin', 'twitter', 'facebook', 'facebookgroups', 'instagram', 'youtube', 'glassdoor', 'indeed', 'amazon', 'googleplay', 'appstore', 'trustpilot', 'g2', 'capterra', 'yelp', 'bbb', 'etsy', 'github', 'stackoverflow', 'stackexchange', 'devto', 'medium', 'hackernews', 'substack', 'pinterest', 'tumblr', 'discord', 'slack', 'telegram', 'whatsapp', 'twitch', 'kick', 'snapchat', 'blind', 'kickstarter', 'indiegogo', 'mastodon', 'bluesky', 'lemmy', 'kbin', 'superuser', 'askubuntu', 'serverfault', 'clubhouse', 'spaces', 'productboard', 'canny', 'uservoice', 'featureupvote'],
           maxJobsPerDay: 3
         },
         pro: { 
           apiQuota: 500, 
-          platforms: ['reddit', 'tiktok', 'quora', 'producthunt', 'indiehackers', 'linkedin', 'twitter', 'facebook', 'instagram', 'youtube', 'glassdoor', 'indeed', 'amazon', 'googleplay', 'appstore', 'trustpilot', 'g2', 'capterra', 'yelp', 'bbb', 'etsy', 'github', 'stackoverflow', 'stackexchange', 'devto', 'medium', 'hackernews'],
+          platforms: ['reddit', 'tiktok', 'quora', 'producthunt', 'indiehackers', 'linkedin', 'twitter', 'facebook', 'facebookgroups', 'instagram', 'youtube', 'glassdoor', 'indeed', 'amazon', 'googleplay', 'appstore', 'trustpilot', 'g2', 'capterra', 'yelp', 'bbb', 'etsy', 'github', 'stackoverflow', 'stackexchange', 'devto', 'medium', 'hackernews'],
           maxJobsPerDay: 10
         },
         elite: { 
           apiQuota: -1, 
-          platforms: ['reddit', 'tiktok', 'quora', 'producthunt', 'indiehackers', 'linkedin', 'twitter', 'facebook', 'instagram', 'youtube', 'glassdoor', 'indeed', 'amazon', 'googleplay', 'appstore', 'trustpilot', 'g2', 'capterra', 'yelp', 'bbb', 'etsy', 'github', 'stackoverflow', 'stackexchange', 'devto', 'medium', 'hackernews', 'substack', 'pinterest', 'tumblr', 'discord', 'slack', 'telegram', 'whatsapp', 'twitch', 'kick', 'snapchat', 'blind', 'kickstarter', 'indiegogo', 'mastodon', 'bluesky', 'lemmy', 'kbin', 'superuser', 'askubuntu', 'serverfault', 'clubhouse', 'spaces', 'productboard', 'canny', 'uservoice', 'featureupvote'],
+          platforms: ['reddit', 'tiktok', 'quora', 'producthunt', 'indiehackers', 'linkedin', 'twitter', 'facebook', 'facebookgroups', 'instagram', 'youtube', 'glassdoor', 'indeed', 'amazon', 'googleplay', 'appstore', 'trustpilot', 'g2', 'capterra', 'yelp', 'bbb', 'etsy', 'github', 'stackoverflow', 'stackexchange', 'devto', 'medium', 'hackernews', 'substack', 'pinterest', 'tumblr', 'discord', 'slack', 'telegram', 'whatsapp', 'twitch', 'kick', 'snapchat', 'blind', 'kickstarter', 'indiegogo', 'mastodon', 'bluesky', 'lemmy', 'kbin', 'superuser', 'askubuntu', 'serverfault', 'clubhouse', 'spaces', 'productboard', 'canny', 'uservoice', 'featureupvote'],
           maxJobsPerDay: -1
         }
       };
