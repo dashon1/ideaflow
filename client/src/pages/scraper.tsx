@@ -48,6 +48,8 @@ export default function Scraper() {
   const [targetNiche, setTargetNiche] = useState('');
   const [isConfiguring, setIsConfiguring] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [currentPage, setCurrentPage] = useState(0);
+  const [showAllPlatforms, setShowAllPlatforms] = useState(false);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -64,6 +66,12 @@ export default function Scraper() {
   const displayPlatforms = availablePlatforms.filter(platform => 
     selectedCategory === 'All' || platform.category === selectedCategory
   );
+  
+  const PLATFORMS_PER_PAGE = 30;
+  const totalPages = Math.ceil(displayPlatforms.length / PLATFORMS_PER_PAGE);
+  const paginatedPlatforms = showAllPlatforms 
+    ? displayPlatforms 
+    : displayPlatforms.slice(currentPage * PLATFORMS_PER_PAGE, (currentPage + 1) * PLATFORMS_PER_PAGE);
 
   const niches = [
     'Productivity', 'Finance', 'Gaming', 'Education', 'Fitness', 'Health',
@@ -254,9 +262,21 @@ export default function Scraper() {
               </Select>
             </div>
 
+            {/* Show All Toggle */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  checked={showAllPlatforms}
+                  onCheckedChange={setShowAllPlatforms}
+                />
+                <Label className="text-sm">Show all platforms at once</Label>
+              </div>
+              <Badge variant="outline">{selectedPlatforms.length} selected</Badge>
+            </div>
+
             {/* Platform Grid */}
-            <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
-              {displayPlatforms.slice(0, 20).map(platform => (
+            <div className={`grid grid-cols-2 gap-2 ${showAllPlatforms ? 'max-h-96 overflow-y-auto' : ''}`}>
+              {paginatedPlatforms.map(platform => (
                 <div 
                   key={platform.id}
                   className={`flex items-center space-x-2 p-2 rounded-lg border cursor-pointer transition-all ${
@@ -272,17 +292,69 @@ export default function Scraper() {
                     onChange={() => {}}
                   />
                   <span className="text-sm font-medium">{platform.name}</span>
+                  <Badge variant="secondary" className="text-xs ml-auto">{platform.category}</Badge>
                   {!platform.active && (
-                    <Badge variant="secondary" className="text-xs ml-auto">Soon</Badge>
+                    <Badge variant="secondary" className="text-xs">Soon</Badge>
                   )}
                 </div>
               ))}
             </div>
-            {displayPlatforms.length > 20 && (
-              <p className="text-sm text-gray-500 text-center">
-                Showing 20 of {displayPlatforms.length} platforms. Use category filter to find more.
-              </p>
+
+            {/* Pagination Controls */}
+            {!showAllPlatforms && totalPages > 1 && (
+              <div className="flex items-center justify-between">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                  disabled={currentPage === 0}
+                >
+                  Previous
+                </Button>
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-500">
+                    Page {currentPage + 1} of {totalPages}
+                  </span>
+                  <Badge variant="outline">
+                    {currentPage * PLATFORMS_PER_PAGE + 1}-{Math.min((currentPage + 1) * PLATFORMS_PER_PAGE, displayPlatforms.length)} of {displayPlatforms.length}
+                  </Badge>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
+                  disabled={currentPage === totalPages - 1}
+                >
+                  Next
+                </Button>
+              </div>
             )}
+
+            {/* Quick Select All/None */}
+            <div className="flex items-center justify-between pt-2 border-t">
+              <div className="flex space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const platformIds = displayPlatforms.filter(p => p.active).map(p => p.id);
+                    setSelectedPlatforms([...new Set([...selectedPlatforms, ...platformIds])]);
+                  }}
+                >
+                  Select All {selectedCategory !== 'All' ? selectedCategory : ''}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const platformIds = displayPlatforms.map(p => p.id);
+                    setSelectedPlatforms(selectedPlatforms.filter(id => !platformIds.includes(id)));
+                  }}
+                >
+                  Deselect All
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
