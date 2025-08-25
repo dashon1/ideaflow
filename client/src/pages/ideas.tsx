@@ -43,6 +43,29 @@ const problemTypeColors = {
   "Feature Gap": "bg-purple-100 text-purple-700 border-purple-200",
 };
 
+const availableNiches = [
+  "All Niches",
+  "SaaS",
+  "E-commerce", 
+  "Productivity",
+  "Social Media",
+  "FinTech",
+  "HealthTech",
+  "EdTech",
+  "Gaming",
+  "Travel",
+  "Food & Dining",
+  "Fitness",
+  "Real Estate",
+  "Marketing",
+  "Design",
+  "Development",
+  "AI & Machine Learning",
+  "Cryptocurrency",
+  "B2B Tools",
+  "Consumer Apps"
+];
+
 interface PlatformSection {
   platform: string;
   count: number;
@@ -56,6 +79,7 @@ export default function Ideas() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedNiche, setSelectedNiche] = useState("all");
+  const [isNicheModalOpen, setIsNicheModalOpen] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     Reddit: true,
     TikTok: true,
@@ -120,9 +144,21 @@ export default function Ideas() {
     });
   };
 
-  // Group pain points by platform
+  // Filter pain points by niche and search term
+  const filteredPainPoints = painPoints.filter((painPoint) => {
+    const matchesNiche = selectedNiche === "all" || selectedNiche === "All Niches" || 
+      painPoint.detectedNiche?.toLowerCase().includes(selectedNiche.toLowerCase());
+    
+    const matchesSearch = !searchTerm || 
+      painPoint.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      painPoint.fullText?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    return matchesNiche && matchesSearch;
+  });
+
+  // Group filtered pain points by platform
   const platformSections: PlatformSection[] = Object.entries(
-    painPoints.reduce((acc, painPoint) => {
+    filteredPainPoints.reduce((acc, painPoint) => {
       const platform = painPoint.platform || "Unknown";
       if (!acc[platform]) {
         acc[platform] = [];
@@ -142,6 +178,15 @@ export default function Ideas() {
       ...prev,
       [platform]: !prev[platform]
     }));
+  };
+
+  const handleNicheSelect = (niche: string) => {
+    setSelectedNiche(niche);
+    setIsNicheModalOpen(false);
+    toast({
+      title: "Niche Selected",
+      description: `Filtering ideas by: ${niche}`,
+    });
   };
 
   // Redirect to home if not authenticated
@@ -229,8 +274,16 @@ export default function Ideas() {
                 />
               </div>
               <div className="text-sm text-gray-600">
-                Niche: <span className="text-gray-400">None selected.</span>{" "}
-                <button className="text-blue-600 hover:text-blue-700">Select a niche</button>
+                Niche: <span className="text-gray-400">
+                  {selectedNiche === "all" || selectedNiche === "All Niches" ? "None selected." : selectedNiche}
+                </span>{" "}
+                <button 
+                  onClick={() => setIsNicheModalOpen(true)}
+                  className="text-blue-600 hover:text-blue-700"
+                  data-testid="button-select-niche"
+                >
+                  Select a niche
+                </button>
               </div>
             </div>
 
@@ -488,6 +541,63 @@ export default function Ideas() {
                 <Loader className="w-4 h-4 mr-2 animate-spin" />
               ) : null}
               {createPainPointMutation.isPending ? 'Adding...' : 'Add Pain Point'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Niche Selection Modal */}
+      <Dialog open={isNicheModalOpen} onOpenChange={setIsNicheModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <DialogTitle>Select a Niche</DialogTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsNicheModalOpen(false)}
+                data-testid="button-close-niche-modal"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            <DialogDescription>
+              Filter ideas by selecting a specific niche or industry focus.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 max-h-64 overflow-y-auto">
+            {availableNiches.map((niche) => (
+              <button
+                key={niche}
+                onClick={() => handleNicheSelect(niche)}
+                className={`w-full text-left px-3 py-2 rounded-lg border transition-colors ${
+                  selectedNiche === niche || (selectedNiche === "all" && niche === "All Niches")
+                    ? "bg-blue-50 border-blue-200 text-blue-700"
+                    : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
+                }`}
+                data-testid={`button-niche-${niche.toLowerCase().replace(/\s+/g, '-')}`}
+              >
+                {niche}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex justify-end space-x-3 pt-4">
+            <Button 
+              variant="outline" 
+              onClick={() => setIsNicheModalOpen(false)}
+              data-testid="button-cancel-niche"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                handleNicheSelect("All Niches");
+              }}
+              data-testid="button-clear-niche"
+            >
+              Clear Filter
             </Button>
           </div>
         </DialogContent>
