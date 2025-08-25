@@ -6,6 +6,8 @@ import {
   content,
   settings,
   scrapingJobs,
+  creditTransactions,
+  creditPackages,
   type User,
   type UpsertUser,
   type PainPoint,
@@ -20,6 +22,10 @@ import {
   type InsertSetting,
   type ScrapingJob,
   type InsertScrapingJob,
+  type CreditTransaction,
+  type InsertCreditTransaction,
+  type CreditPackage,
+  type InsertCreditPackage,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, like, inArray } from "drizzle-orm";
@@ -66,6 +72,18 @@ export interface IStorage {
   // Settings operations
   getSetting(userId: string, key: string): Promise<Setting | undefined>;
   setSetting(setting: InsertSetting): Promise<Setting>;
+
+  // Credit management operations
+  getUserCredits(userId: string): Promise<{ balance: number; used: number; monthlyIncluded: number }>;
+  deductCredits(userId: string, amount: number, description: string, jobId?: string): Promise<boolean>;
+  addCredits(userId: string, amount: number, description: string, metadata?: any): Promise<void>;
+  getCreditTransactions(userId: string, limit?: number): Promise<CreditTransaction[]>;
+  updateUserCredits(userId: string, creditsBalance: number): Promise<void>;
+  
+  // Credit package operations
+  getCreditPackages(): Promise<CreditPackage[]>;
+  createCreditPackage(data: InsertCreditPackage): Promise<CreditPackage>;
+  getCreditPackageById(id: string): Promise<CreditPackage | undefined>;
 
   // Analytics
   getStats(): Promise<{
@@ -278,6 +296,186 @@ export class DatabaseStorage implements IStorage {
     return job;
   }
 
+  // Credit management operations
+  async getUserCredits(userId: string): Promise<{ balance: number; used: number; monthlyIncluded: number }> {
+    const [user] = await db.select().from(users).where(eq(users.id, userId));
+    if (!user) {
+      // Create demo user if not exists
+      if (userId === 'demo-user') {
+        await db.insert(users).values({
+          id: userId,
+          email: 'demo@example.com',
+          firstName: 'Demo',
+          lastName: 'User',
+          subscriptionTier: 'starter',
+          subscriptionStatus: 'active',
+          creditsBalance: 100,
+          creditsUsed: 0,
+          monthlyCreditsIncluded: 500,
+        });
+        
+        return {
+          balance: 100,
+          used: 0,
+          monthlyIncluded: 500,
+        };
+      }
+      throw new Error("User not found");
+    }
+    
+    return {
+      balance: user.creditsBalance || 0,
+      used: user.creditsUsed || 0,
+      monthlyIncluded: user.monthlyCreditsIncluded || 100,
+    };
+  }
+
+  async deductCredits(userId: string, amount: number, description: string, jobId?: string): Promise<boolean> {
+    const [user] = await db.select().from(users).where(eq(users.id, userId));
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    if (user.creditsBalance < amount) {
+      return false; // Insufficient credits
+    }
+
+    // Deduct credits and record transaction
+    await db.update(users)
+      .set({ 
+        creditsBalance: user.creditsBalance - amount,
+        creditsUsed: (user.creditsUsed || 0) + amount 
+      })
+      .where(eq(users.id, userId));
+
+    await db.insert(creditTransactions).values({
+      userId,
+      type: "usage",
+      amount: -amount, // Negative for usage
+      description,
+      relatedJobId: jobId,
+    });
+
+    return true;
+  }
+
+  async addCredits(userId: string, amount: number, description: string, metadata?: any): Promise<void> {
+    const [user] = await db.select().from(users).where(eq(users.id, userId));
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Add credits and record transaction
+    await db.update(users)
+      .set({ creditsBalance: user.creditsBalance + amount })
+      .where(eq(users.id, userId));
+
+    await db.insert(creditTransactions).values({
+      userId,
+      type: "purchase",
+      amount, // Positive for addition
+      description,
+      metadata,
+    });
+  }
+
+  async getCreditTransactions(userId: string, limit: number = 50): Promise<CreditTransaction[]> {
+    return await db.select()
+      .from(creditTransactions)
+      .where(eq(creditTransactions.userId, userId))
+      .orderBy(desc(creditTransactions.createdAt))
+      .limit(limit);
+  }
+
+  async updateUserCredits(userId: string, creditsBalance: number): Promise<void> {
+    await db.update(users)
+      .set({ creditsBalance })
+      .where(eq(users.id, userId));
+  }
+
+  // Credit package operations
+  async getCreditPackages(): Promise<CreditPackage[]> {
+    return await db.select()
+      .from(creditPackages)
+      .where(eq(creditPackages.isActive, true))
+      .orderBy(creditPackages.sortOrder);
+  }
+
+  async createCreditPackage(data: InsertCreditPackage): Promise<CreditPackage> {
+    const [created] = await db.insert(creditPackages).values(data).returning();
+    return created;
+  }
+
+  async getCreditPackageById(id: string): Promise<CreditPackage | undefined> {
+    const [creditPackage] = await db.select().from(creditPackages).where(eq(creditPackages.id, id));
+    return creditPackage;
+  }
+
+  async initializeCreditPackages(): Promise<void> {
+    try {
+      // Check if credit packages already exist
+      const existingPackages = await db.select().from(creditPackages).limit(1);
+      if (existingPackages.length > 0) {
+        console.log("Credit packages already initialized");
+        return;
+      }
+
+      // Insert credit packages from pricing config
+      const packages = [
+        {
+          name: 'Starter Pack',
+          credits: 100,
+          bonusCredits: 0,
+          priceUsd: 6.99,
+          stripePriceId: 'price_starter_100',
+          isActive: true,
+          sortOrder: 1,
+        },
+        {
+          name: 'Popular Pack',
+          credits: 500,
+          bonusCredits: 50,
+          priceUsd: 29.99,
+          stripePriceId: 'price_popular_500',
+          isActive: true,
+          sortOrder: 2,
+        },
+        {
+          name: 'Power Pack',
+          credits: 1000,
+          bonusCredits: 150,
+          priceUsd: 49.99,
+          stripePriceId: 'price_power_1000',
+          isActive: true,
+          sortOrder: 3,
+        },
+        {
+          name: 'Enterprise Pack',
+          credits: 5000,
+          bonusCredits: 1000,
+          priceUsd: 199.99,
+          stripePriceId: 'price_enterprise_5000',
+          isActive: true,
+          sortOrder: 4,
+        },
+      ];
+
+      await db.insert(creditPackages).values(packages);
+      console.log("Initialized credit packages successfully");
+
+      // Initialize demo user with starting credits
+      const demoUserId = 'demo-user';
+      try {
+        await this.addCredits(demoUserId, 100, "Welcome bonus - 100 free credits");
+        console.log("Added welcome bonus credits for demo user");
+      } catch (error) {
+        console.log("Demo user credits already initialized");
+      }
+    } catch (error) {
+      console.error("Error initializing credit packages:", error);
+    }
+  }
+
   // Analytics
   async getStats(): Promise<{
     totalPainPoints: number;
@@ -306,6 +504,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async generateSampleData(): Promise<void> {
+    // Initialize credit packages first
+    await this.initializeCreditPackages();
+    
     // Clear existing data
     await db.delete(scrapingJobs);
     await db.delete(content);

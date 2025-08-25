@@ -6,26 +6,37 @@ import { z } from "zod";
 import { insertPainPointSchema, insertIdeaSchema, insertMvpSchema } from "@shared/schema";
 import { summarizeIdea, classifyIdea } from "./services/openai";
 import { scrapePlatform } from "./services/scraper";
+import { scrapeMultiplePlatforms } from "./services/platformApi";
+import { calculateJobCost, CREDIT_COSTS, hasplatformAccess, PRICING_TIERS, CREDIT_PACKAGES } from "./services/pricing";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware - disabled for demo
   // await setupAuth(app);
 
-  // Auth routes - demo mode with tier information
+  // Auth routes - demo mode with credit information
   app.get('/api/auth/user', async (req: any, res) => {
-    // Return demo user with CRM tier data
-    res.json({
-      id: 'demo-user',
-      email: 'demo@example.com',
-      firstName: 'Demo',
-      lastName: 'User',
-      subscriptionTier: 'standard',
-      subscriptionStatus: 'active',
-      apiQuotaUsed: 23,
-      apiQuotaLimit: 100,
-      platformAccess: ['reddit', 'tiktok', 'quora', 'producthunt', 'indiehackers', 'linkedin', 'twitter', 'facebook', 'facebookgroups', 'instagram', 'youtube', 'glassdoor', 'indeed', 'amazon', 'googleplay', 'appstore', 'trustpilot', 'g2', 'capterra', 'yelp', 'bbb', 'etsy', 'github', 'stackoverflow', 'stackexchange', 'devto', 'medium', 'hackernews', 'substack', 'pinterest', 'tumblr', 'discord', 'slack', 'telegram', 'whatsapp', 'twitch', 'kick', 'snapchat', 'blind', 'kickstarter', 'indiegogo', 'mastodon', 'bluesky', 'lemmy', 'kbin', 'superuser', 'askubuntu', 'serverfault', 'clubhouse', 'spaces', 'productboard', 'canny', 'uservoice', 'featureupvote'],
-      createdAt: new Date().toISOString(),
-    });
+    try {
+      const userId = 'demo-user';
+      const credits = await storage.getUserCredits(userId);
+      
+      // Return demo user with credit-based CRM data
+      res.json({
+        id: userId,
+        email: 'demo@example.com',
+        firstName: 'Demo',
+        lastName: 'User',
+        subscriptionTier: 'starter',
+        subscriptionStatus: 'active',
+        creditsBalance: credits.balance,
+        creditsUsed: credits.used,
+        monthlyCreditsIncluded: credits.monthlyIncluded,
+        platformAccess: ['reddit', 'tiktok', 'quora', 'producthunt', 'indiehackers'],
+        createdAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error('Error fetching user:', error);
+      res.status(500).json({ message: 'Failed to fetch user data' });
+    }
   });
 
   // User tier upgrade endpoint
@@ -285,6 +296,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/scraper/start', async (req, res) => {
     try {
       const { jobType, platforms, targetNiche } = req.body;
+      const userId = 'demo-user'; // In production, get from authenticated user
       
       // Check if there's already an active job
       const activeJob = await storage.getActiveScrapingJob();
@@ -292,6 +304,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(409).json({ 
           message: "Another scraping job is already running. Please wait for it to complete." 
         });
+      }
+
+      // Calculate credit cost for this job
+      const expectedPainPoints = jobType === 'niche' ? 5 : 10;
+      const creditCost = calculateJobCost(platforms, expectedPainPoints);
+      
+      // Check user credits
+      const userCredits = await storage.getUserCredits(userId);
+      if (userCredits.balance < creditCost) {
+        return res.status(402).json({ 
+          message: `Insufficient credits. Required: ${creditCost}, Available: ${userCredits.balance}`,
+          creditCost,
+          availableCredits: userCredits.balance
+        });
+      }
+
+      // Validate platform access based on user tier
+      const user = await storage.getUser(userId);
+      const userTier = user?.subscriptionTier || 'starter';
+      const unauthorizedPlatforms = platforms.filter((platform: string) => 
+        !hasplatformAccess(userTier, platform)
+      );
+      
+      if (unauthorizedPlatforms.length > 0) {
+        return res.status(403).json({
+          message: `Your ${userTier} plan doesn't include access to: ${unauthorizedPlatforms.join(', ')}`,
+          unauthorizedPlatforms,
+          userTier
+        });
+      }
+
+      // Deduct credits upfront
+      const deductionSuccess = await storage.deductCredits(
+        userId, 
+        creditCost, 
+        `Scraping job: ${platforms.join(', ')} - ${jobType} mode`
+      );
+      
+      if (!deductionSuccess) {
+        return res.status(402).json({ message: 'Failed to process credits' });
       }
 
       // Create new scraping job
@@ -302,60 +354,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: 'running' as const,
         progress: 0,
         currentAgent: 'scraper',
-        totalTargets: platforms.length * (jobType === 'niche' ? 5 : 10),
+        totalTargets: platforms.length * expectedPainPoints,
         completedTargets: 0,
         foundPainPoints: 0,
         metadata: {
           startTime: new Date().toISOString(),
-          requestedBy: 'demo-user'
+          requestedBy: userId,
+          creditCost,
+          useLiveAPIs: true
         }
       };
 
       const job = await storage.createScrapingJob(jobData);
       
-      // Simulate scraping process with realistic pipeline progression
-      setTimeout(async () => {
+      // Start actual live scraping process
+      setImmediate(async () => {
         try {
           await storage.updateScrapingJob(job.id, {
-            progress: 25,
-            currentAgent: 'analyzer',
-            completedTargets: Math.floor(jobData.totalTargets * 0.25)
+            progress: 10,
+            currentAgent: 'scraper'
           });
           
-          setTimeout(async () => {
-            try {
+          let foundPainPoints: any[] = [];
+          const query = targetNiche || 'problem need frustration want';
+          
+          // Use live platform APIs
+          try {
+            foundPainPoints = await scrapeMultiplePlatforms(platforms, query, jobType);
+            
+            // Save pain points to database
+            for (const painPoint of foundPainPoints) {
+              await storage.createPainPoint(painPoint);
+            }
+            
+            await storage.updateScrapingJob(job.id, {
+              progress: 60,
+              currentAgent: 'analyzer',
+              foundPainPoints: foundPainPoints.length
+            });
+            
+            // Process with AI if we have pain points
+            if (foundPainPoints.length > 0) {
               await storage.updateScrapingJob(job.id, {
-                progress: 60,
-                currentAgent: 'filter',
-                completedTargets: Math.floor(jobData.totalTargets * 0.6),
-                foundPainPoints: Math.floor(Math.random() * 5) + 3
+                progress: 80,
+                currentAgent: 'ai_processor'
               });
               
-              setTimeout(async () => {
-                try {
-                  await storage.updateScrapingJob(job.id, {
-                    status: 'completed',
-                    progress: 100,
-                    completedTargets: jobData.totalTargets,
-                    foundPainPoints: Math.floor(Math.random() * 8) + 5,
-                    completedAt: new Date()
-                  });
-                } catch (error) {
-                  console.error("Error completing scraping job:", error);
-                }
-              }, 3000);
-            } catch (error) {
-              console.error("Error updating scraping job:", error);
+              // AI processing happens in pain point approval workflow
             }
-          }, 2000);
+            
+            await storage.updateScrapingJob(job.id, {
+              status: 'completed',
+              progress: 100,
+              completedTargets: jobData.totalTargets,
+              foundPainPoints: foundPainPoints.length,
+              completedAt: new Date()
+            });
+            
+          } catch (scrapingError) {
+            console.error('Live scraping failed, using fallback:', scrapingError);
+            
+            // Fallback to mock data if live APIs fail
+            for (const platform of platforms) {
+              const mockData = await scrapePlatform(platform, jobType, targetNiche);
+              foundPainPoints.push(...mockData);
+              
+              for (const painPoint of mockData) {
+                await storage.createPainPoint(painPoint);
+              }
+            }
+            
+            await storage.updateScrapingJob(job.id, {
+              status: 'completed',
+              progress: 100,
+              foundPainPoints: foundPainPoints.length,
+              completedAt: new Date(),
+              metadata: {
+                ...jobData.metadata,
+                fallbackUsed: true,
+                error: (scrapingError as Error).message
+              }
+            });
+          }
+          
         } catch (error) {
-          console.error("Error updating scraping job:", error);
+          console.error('Scraping job failed:', error);
+          await storage.updateScrapingJob(job.id, {
+            status: 'failed',
+            errorMessage: (error as Error).message
+          });
+          
+          // Refund credits on failure
+          await storage.addCredits(
+            userId,
+            creditCost,
+            `Refund for failed job: ${job.id}`
+          );
         }
-      }, 1000);
+      });
 
       res.json({
         message: `${jobType === 'niche' ? 'Niche-targeted' : 'Discovery'} scraping started successfully`,
-        jobId: job.id
+        jobId: job.id,
+        creditCost,
+        expectedResults: expectedPainPoints
       });
     } catch (error) {
       console.error("Error starting scraper:", error);
@@ -545,6 +647,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating user features:", error);
       res.status(500).json({ message: "Failed to update user features" });
+    }
+  });
+
+  // Credit management routes
+  app.get("/api/credits/balance", async (req, res) => {
+    try {
+      const userId = 'demo-user'; // In production, get from authenticated user
+      const credits = await storage.getUserCredits(userId);
+      res.json(credits);
+    } catch (error) {
+      console.error("Error fetching credits:", error);
+      res.status(500).json({ message: "Failed to fetch credit balance" });
+    }
+  });
+
+  app.get("/api/credits/transactions", async (req, res) => {
+    try {
+      const userId = 'demo-user';
+      const { limit = 50 } = req.query;
+      const transactions = await storage.getCreditTransactions(userId, parseInt(limit as string));
+      res.json(transactions);
+    } catch (error) {
+      console.error("Error fetching transactions:", error);
+      res.status(500).json({ message: "Failed to fetch transactions" });
+    }
+  });
+
+  app.get("/api/credit-packages", async (req, res) => {
+    try {
+      const packages = await storage.getCreditPackages();
+      res.json(packages);
+    } catch (error) {
+      console.error("Error fetching credit packages:", error);
+      res.status(500).json({ message: "Failed to fetch credit packages" });
+    }
+  });
+
+  app.post("/api/credits/purchase", async (req, res) => {
+    try {
+      const userId = 'demo-user';
+      const { packageId, paymentIntentId } = req.body;
+      
+      const creditPackage = await storage.getCreditPackageById(packageId);
+      if (!creditPackage) {
+        return res.status(404).json({ message: "Credit package not found" });
+      }
+      
+      const totalCredits = creditPackage.credits + (creditPackage.bonusCredits || 0);
+      
+      await storage.addCredits(
+        userId,
+        totalCredits,
+        `Purchased ${creditPackage.name}`,
+        { 
+          packageId, 
+          paymentIntentId,
+          purchasePrice: creditPackage.priceUsd 
+        }
+      );
+      
+      res.json({ 
+        message: "Credits purchased successfully",
+        creditsAdded: totalCredits
+      });
+    } catch (error) {
+      console.error("Error purchasing credits:", error);
+      res.status(500).json({ message: "Failed to purchase credits" });
+    }
+  });
+
+  app.get("/api/pricing", async (req, res) => {
+    try {
+      res.json({
+        tiers: PRICING_TIERS,
+        creditCosts: CREDIT_COSTS,
+        packages: CREDIT_PACKAGES
+      });
+    } catch (error) {
+      console.error("Error fetching pricing:", error);
+      res.status(500).json({ message: "Failed to fetch pricing" });
     }
   });
 

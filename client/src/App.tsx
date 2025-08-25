@@ -18,6 +18,7 @@ import AgentManagement from "@/pages/agent-management";
 import CRM from "@/pages/crm";
 import GlobalSettings from "@/pages/global-settings";
 import Marketing from "@/pages/marketing";
+import Pricing from "@/pages/pricing";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -31,6 +32,7 @@ function Router() {
       <Route path="/mvp" component={MVP} />
       <Route path="/content" component={Content} />
       <Route path="/marketing" component={Marketing} />
+      <Route path="/pricing" component={Pricing} />
       <Route path="/analytics" component={Analytics} />
       <Route path="/pipeline" component={Pipeline} />
       <Route path="/agent-management" component={AgentManagement} />

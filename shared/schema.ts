@@ -33,11 +33,14 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
-  subscriptionTier: varchar("subscription_tier").notNull().default("standard"), // standard, pro, elite
+  subscriptionTier: varchar("subscription_tier").notNull().default("starter"), // starter, professional, enterprise
   subscriptionStatus: varchar("subscription_status").notNull().default("active"), // active, cancelled, expired
-  apiQuotaUsed: integer("api_quota_used").notNull().default(0),
-  apiQuotaLimit: integer("api_quota_limit").notNull().default(100), // Standard: 100, Pro: 500, Elite: unlimited
-  platformAccess: text("platform_access").array().notNull().default(['Reddit', 'TikTok', 'Quora']), // Tier-based platform access
+  creditsBalance: integer("credits_balance").notNull().default(100), // Current credit balance
+  creditsUsed: integer("credits_used").notNull().default(0), // Total credits consumed
+  monthlyCreditsIncluded: integer("monthly_credits_included").notNull().default(100), // Credits included in subscription
+  stripeCustomerId: varchar("stripe_customer_id"),
+  stripeSubscriptionId: varchar("stripe_subscription_id"),
+  platformAccess: text("platform_access").array().notNull().default(['reddit', 'tiktok', 'quora', 'producthunt', 'indiehackers']), // Tier-based platform access
   lastLogin: timestamp("last_login"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -183,6 +186,31 @@ export const globalTools = pgTable("global_tools", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Credit transactions and usage tracking
+export const creditTransactions = pgTable("credit_transactions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id),
+  type: varchar("type").notNull(), // purchase, usage, refund, bonus
+  amount: integer("amount").notNull(), // Credits added (positive) or used (negative)
+  description: text("description").notNull(),
+  relatedJobId: varchar("related_job_id"), // Link to scraping job if applicable
+  metadata: jsonb("metadata"), // Store additional data like Stripe payment intent
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Credit packages available for purchase
+export const creditPackages = pgTable("credit_packages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
+  credits: integer("credits").notNull(),
+  priceUsd: decimal("price_usd", { precision: 8, scale: 2 }).notNull(),
+  stripePriceId: varchar("stripe_price_id"),
+  bonusCredits: integer("bonus_credits").default(0), // Extra credits for larger packages
+  isActive: boolean("is_active").default(true),
+  sortOrder: integer("sort_order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // System settings and configurations
 export const settings = pgTable("settings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -267,3 +295,17 @@ export const insertGlobalToolSchema = createInsertSchema(globalTools).omit({
 });
 export type InsertGlobalTool = z.infer<typeof insertGlobalToolSchema>;
 export type GlobalTool = typeof globalTools.$inferSelect;
+
+export const insertCreditTransactionSchema = createInsertSchema(creditTransactions).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertCreditTransaction = z.infer<typeof insertCreditTransactionSchema>;
+export type CreditTransaction = typeof creditTransactions.$inferSelect;
+
+export const insertCreditPackageSchema = createInsertSchema(creditPackages).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertCreditPackage = z.infer<typeof insertCreditPackageSchema>;
+export type CreditPackage = typeof creditPackages.$inferSelect;
