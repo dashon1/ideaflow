@@ -24,6 +24,7 @@ import {
   Users,
   TrendingUp
 } from "lucide-react";
+import { ALL_PLATFORMS, PLATFORM_CATEGORIES, getPlatformsByTier } from "@/data/platforms";
 
 interface ScrapingJob {
   id: string;
@@ -42,22 +43,27 @@ interface ScrapingJob {
 }
 
 export default function Scraper() {
-  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(['Reddit', 'TikTok', 'Quora']);
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(['reddit', 'tiktok', 'quora']);
   const [scrapingMode, setScrapingMode] = useState<'discovery' | 'niche'>('discovery');
   const [targetNiche, setTargetNiche] = useState('');
   const [isConfiguring, setIsConfiguring] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('All');
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const platforms = [
-    { name: 'Reddit', icon: '🔴', active: true },
-    { name: 'TikTok', icon: '⚫', active: true },
-    { name: 'Quora', icon: '🔴', active: true },
-    { name: 'YouTube', icon: '🔴', active: false },
-    { name: 'LinkedIn', icon: '🔵', active: false },
-    { name: 'Twitter/X', icon: '⚫', active: false }
-  ];
+  // Get current user to check tier access
+  const { data: user } = useQuery({
+    queryKey: ['/api/auth/user'],
+  });
+
+  const userTier = (user as any)?.subscriptionTier || 'standard';
+  const availablePlatforms = getPlatformsByTier(userTier as 'standard' | 'pro' | 'elite');
+  
+  // Filter platforms by selected category
+  const displayPlatforms = availablePlatforms.filter(platform => 
+    selectedCategory === 'All' || platform.category === selectedCategory
+  );
 
   const niches = [
     'Productivity', 'Finance', 'Gaming', 'Education', 'Fitness', 'Health',
@@ -103,11 +109,11 @@ export default function Scraper() {
     },
   });
 
-  const togglePlatform = (platformName: string) => {
+  const togglePlatform = (platformId: string) => {
     setSelectedPlatforms(prev => 
-      prev.includes(platformName) 
-        ? prev.filter(p => p !== platformName)
-        : [...prev, platformName]
+      prev.includes(platformId) 
+        ? prev.filter(p => p !== platformId)
+        : [...prev, platformId]
     );
   };
 
@@ -222,23 +228,49 @@ export default function Scraper() {
             <CardDescription>Select platforms to scrape for pain points</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              {platforms.map(platform => (
+            {/* Tier Status */}
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <Zap className="w-4 h-4 text-blue-500" />
+                <span className="text-sm font-medium">{userTier.charAt(0).toUpperCase() + userTier.slice(1)} Plan</span>
+              </div>
+              <Badge variant="outline">{availablePlatforms.length} platforms available</Badge>
+            </div>
+
+            {/* Category Filter */}
+            <div className="space-y-2">
+              <Label>Platform Category</Label>
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PLATFORM_CATEGORIES.map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Platform Grid */}
+            <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
+              {displayPlatforms.slice(0, 20).map(platform => (
                 <div 
-                  key={platform.name}
+                  key={platform.id}
                   className={`flex items-center space-x-2 p-2 rounded-lg border cursor-pointer transition-all ${
-                    selectedPlatforms.includes(platform.name)
+                    selectedPlatforms.includes(platform.id)
                       ? 'border-primary-300 bg-primary-50 dark:bg-primary-950/20'
                       : 'border-gray-200 hover:border-gray-300 dark:border-gray-700'
                   } ${!platform.active ? 'opacity-50' : ''}`}
-                  onClick={() => platform.active && togglePlatform(platform.name)}
+                  onClick={() => platform.active && togglePlatform(platform.id)}
                 >
                   <Checkbox 
-                    checked={selectedPlatforms.includes(platform.name)}
+                    checked={selectedPlatforms.includes(platform.id)}
                     disabled={!platform.active}
                     onChange={() => {}}
                   />
-                  <span className="text-lg">{platform.icon}</span>
                   <span className="text-sm font-medium">{platform.name}</span>
                   {!platform.active && (
                     <Badge variant="secondary" className="text-xs ml-auto">Soon</Badge>
@@ -246,6 +278,11 @@ export default function Scraper() {
                 </div>
               ))}
             </div>
+            {displayPlatforms.length > 20 && (
+              <p className="text-sm text-gray-500 text-center">
+                Showing 20 of {displayPlatforms.length} platforms. Use category filter to find more.
+              </p>
+            )}
           </CardContent>
         </Card>
 
