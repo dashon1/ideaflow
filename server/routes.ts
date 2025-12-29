@@ -730,6 +730,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Stripe checkout routes
+  app.post("/api/stripe/checkout/credits", async (req, res) => {
+    try {
+      const userId = 'demo-user';
+      const { packageId } = req.body;
+      
+      const creditPackage = await storage.getCreditPackageById(packageId);
+      if (!creditPackage) {
+        return res.status(404).json({ message: "Credit package not found" });
+      }
+
+      const { stripeService } = await import('./stripeService');
+      const { getStripePublishableKey } = await import('./stripeClient');
+      
+      const user = await storage.getUser(userId);
+      let customerId = user?.stripeCustomerId;
+      
+      if (!customerId) {
+        const customer = await stripeService.createCustomer(user?.email || 'demo@example.com', userId);
+        await storage.updateUser(userId, { stripeCustomerId: customer.id });
+        customerId = customer.id;
+      }
+
+      const baseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000'}`;
+      
+      const session = await stripeService.createCreditPurchaseSession(
+        customerId,
+        {
+          name: creditPackage.name,
+          priceUsd: Number(creditPackage.priceUsd),
+          credits: creditPackage.credits,
+          bonusCredits: creditPackage.bonusCredits || 0,
+        },
+        `${baseUrl}/pricing?success=true`,
+        `${baseUrl}/pricing?canceled=true`,
+        userId
+      );
+
+      res.json({ url: session.url, publishableKey: await getStripePublishableKey() });
+    } catch (error) {
+      console.error("Error creating checkout session:", error);
+      res.status(500).json({ message: "Failed to create checkout session" });
+    }
+  });
+
+  app.post("/api/stripe/checkout/subscription", async (req, res) => {
+    try {
+      const userId = 'demo-user';
+      const { tierId } = req.body;
+      
+      const { stripeService } = await import('./stripeService');
+      const { getStripePublishableKey } = await import('./stripeClient');
+      
+      const user = await storage.getUser(userId);
+      let customerId = user?.stripeCustomerId;
+      
+      if (!customerId) {
+        const customer = await stripeService.createCustomer(user?.email || 'demo@example.com', userId);
+        await storage.updateUser(userId, { stripeCustomerId: customer.id });
+        customerId = customer.id;
+      }
+
+      const baseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000'}`;
+      
+      const session = await stripeService.createSubscriptionSession(
+        customerId,
+        tierId,
+        `${baseUrl}/pricing?success=true`,
+        `${baseUrl}/pricing?canceled=true`,
+        userId
+      );
+
+      res.json({ url: session.url, publishableKey: await getStripePublishableKey() });
+    } catch (error) {
+      console.error("Error creating subscription session:", error);
+      res.status(500).json({ message: "Failed to create subscription session" });
+    }
+  });
+
+  app.get("/api/stripe/publishable-key", async (req, res) => {
+    try {
+      const { getStripePublishableKey } = await import('./stripeClient');
+      const publishableKey = await getStripePublishableKey();
+      res.json({ publishableKey });
+    } catch (error) {
+      console.error("Error fetching publishable key:", error);
+      res.status(500).json({ message: "Failed to fetch Stripe publishable key" });
+    }
+  });
+
   // Global settings routes
   app.get("/api/global-settings", async (req, res) => {
     try {

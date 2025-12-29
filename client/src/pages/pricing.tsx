@@ -19,6 +19,7 @@ interface PricingTier {
 }
 
 interface CreditPackage {
+  id: string;
   name: string;
   credits: number;
   bonusCredits: number;
@@ -42,19 +43,59 @@ export default function Pricing() {
   });
 
   const handleSubscribe = async (tierId: string) => {
-    toast({
-      title: "Subscription Selected",
-      description: `Starting ${tierId} plan setup...`,
-    });
-    // In production, integrate with Stripe for subscription
+    try {
+      toast({
+        title: "Redirecting to Checkout",
+        description: `Setting up ${tierId} subscription...`,
+      });
+
+      const response = await fetch('/api/stripe/checkout/subscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tierId }),
+      });
+
+      const data = await response.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error(data.message || 'Failed to create checkout session');
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to start checkout",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handlePurchaseCredits = async (packageName: string) => {
-    toast({
-      title: "Credits Purchase",
-      description: `Purchasing ${packageName}...`,
-    });
-    // In production, integrate with Stripe for one-time purchase
+  const handlePurchaseCredits = async (packageId: string) => {
+    try {
+      toast({
+        title: "Redirecting to Checkout",
+        description: "Setting up credit purchase...",
+      });
+
+      const response = await fetch('/api/stripe/checkout/credits', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ packageId }),
+      });
+
+      const data = await response.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error(data.message || 'Failed to create checkout session');
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to start checkout",
+        variant: "destructive",
+      });
+    }
   };
 
   if (isLoading) {
@@ -228,7 +269,7 @@ export default function Pricing() {
                       <Button 
                         variant={index === 1 ? 'default' : 'outline'}
                         className="w-full"
-                        onClick={() => handlePurchaseCredits(pkg.name)}
+                        onClick={() => handlePurchaseCredits(pkg.id)}
                         data-testid={`button-purchase-${pkg.name.toLowerCase().replace(/\s+/g, '-')}`}
                       >
                         Purchase Credits

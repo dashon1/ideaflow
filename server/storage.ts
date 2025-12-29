@@ -393,6 +393,22 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId));
   }
 
+  async updateUser(userId: string, data: Partial<{
+    stripeCustomerId: string;
+    stripeSubscriptionId: string;
+    subscriptionTier: string;
+    subscriptionStatus: string;
+  }>): Promise<void> {
+    await db.update(users)
+      .set(data)
+      .where(eq(users.id, userId));
+  }
+
+  async getUserByStripeCustomerId(stripeCustomerId: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.stripeCustomerId, stripeCustomerId));
+    return user;
+  }
+
   // Credit package operations
   async getCreditPackages(): Promise<CreditPackage[]> {
     return await db.select()
@@ -426,7 +442,7 @@ export class DatabaseStorage implements IStorage {
           name: 'Starter Pack',
           credits: 100,
           bonusCredits: 0,
-          priceUsd: 6.99,
+          priceUsd: '6.99',
           stripePriceId: 'price_starter_100',
           isActive: true,
           sortOrder: 1,
@@ -435,7 +451,7 @@ export class DatabaseStorage implements IStorage {
           name: 'Popular Pack',
           credits: 500,
           bonusCredits: 50,
-          priceUsd: 29.99,
+          priceUsd: '29.99',
           stripePriceId: 'price_popular_500',
           isActive: true,
           sortOrder: 2,
@@ -444,7 +460,7 @@ export class DatabaseStorage implements IStorage {
           name: 'Power Pack',
           credits: 1000,
           bonusCredits: 150,
-          priceUsd: 49.99,
+          priceUsd: '49.99',
           stripePriceId: 'price_power_1000',
           isActive: true,
           sortOrder: 3,
@@ -453,7 +469,7 @@ export class DatabaseStorage implements IStorage {
           name: 'Enterprise Pack',
           credits: 5000,
           bonusCredits: 1000,
-          priceUsd: 199.99,
+          priceUsd: '199.99',
           stripePriceId: 'price_enterprise_5000',
           isActive: true,
           sortOrder: 4,
