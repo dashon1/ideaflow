@@ -425,64 +425,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
           let foundPainPoints: any[] = [];
           const query = targetNiche || 'problem need frustration want';
           
-          // Use live platform APIs
+          // Try live platform APIs first, fall back to mock data if empty/failed
+          let usedFallback = false;
+          
           try {
             foundPainPoints = await scrapeMultiplePlatforms(platforms, query, jobType);
-            
-            // Save pain points to database
-            for (const painPoint of foundPainPoints) {
-              await storage.createPainPoint(painPoint);
-            }
-            
-            await storage.updateScrapingJob(job.id, {
-              progress: 60,
-              currentAgent: 'analyzer',
-              foundPainPoints: foundPainPoints.length
-            });
-            
-            // Process with AI if we have pain points
-            if (foundPainPoints.length > 0) {
-              await storage.updateScrapingJob(job.id, {
-                progress: 80,
-                currentAgent: 'ai_processor'
-              });
-              
-              // AI processing happens in pain point approval workflow
-            }
-            
-            await storage.updateScrapingJob(job.id, {
-              status: 'completed',
-              progress: 100,
-              completedTargets: jobData.totalTargets,
-              foundPainPoints: foundPainPoints.length,
-              completedAt: new Date()
-            });
-            
+            console.log(`Live scraping returned ${foundPainPoints.length} results`);
           } catch (scrapingError) {
-            console.error('Live scraping failed, using fallback:', scrapingError);
+            console.error('Live scraping threw error:', scrapingError);
+            foundPainPoints = [];
+          }
+          
+          // If live APIs returned nothing, use mock data
+          if (foundPainPoints.length === 0) {
+            console.log('Using fallback mock data since live APIs returned no results');
+            usedFallback = true;
             
-            // Fallback to mock data if live APIs fail
             for (const platform of platforms) {
               const mockData = await scrapePlatform(platform, jobType, targetNiche);
               foundPainPoints.push(...mockData);
-              
-              for (const painPoint of mockData) {
-                await storage.createPainPoint(painPoint);
-              }
             }
-            
+          }
+          
+          // Save all pain points to database
+          let savedCount = 0;
+          for (const painPoint of foundPainPoints) {
+            try {
+              await storage.createPainPoint(painPoint);
+              savedCount++;
+            } catch (saveError) {
+              console.error('Failed to save pain point:', saveError);
+            }
+          }
+          console.log(`Saved ${savedCount}/${foundPainPoints.length} pain points to database`);
+          
+          await storage.updateScrapingJob(job.id, {
+            progress: 60,
+            currentAgent: 'analyzer',
+            foundPainPoints: savedCount
+          });
+          
+          // Process with AI if we have pain points
+          if (savedCount > 0) {
             await storage.updateScrapingJob(job.id, {
-              status: 'completed',
-              progress: 100,
-              foundPainPoints: foundPainPoints.length,
-              completedAt: new Date(),
-              metadata: {
-                ...jobData.metadata,
-                fallbackUsed: true,
-                error: (scrapingError as Error).message
-              }
+              progress: 80,
+              currentAgent: 'ai_processor'
             });
           }
+          
+          await storage.updateScrapingJob(job.id, {
+            status: 'completed',
+            progress: 100,
+            completedTargets: jobData.totalTargets,
+            foundPainPoints: savedCount,
+            completedAt: new Date(),
+            metadata: {
+              ...jobData.metadata,
+              fallbackUsed: usedFallback,
+              savedToDB: savedCount
+            }
+          });
           
         } catch (error) {
           console.error('Scraping job failed:', error);
