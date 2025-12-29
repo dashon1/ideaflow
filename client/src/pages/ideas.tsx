@@ -21,9 +21,11 @@ import {
   ExternalLink,
   Rocket,
   X,
-  Loader
+  Loader,
+  Sparkles
 } from "lucide-react";
 import { PainPoint } from "@shared/schema";
+import { openMvpBuilder, MvpPlatform, PainPointData } from "@/lib/mvpGenerator";
 
 const platformColors = {
   Reddit: "bg-orange-100 text-orange-600 border-orange-200",
@@ -85,6 +87,9 @@ export default function Ideas() {
     TikTok: true,
   });
   const [isAddPainPointOpen, setIsAddPainPointOpen] = useState(false);
+  const [isMvpModalOpen, setIsMvpModalOpen] = useState(false);
+  const [selectedPainPointForMvp, setSelectedPainPointForMvp] = useState<PainPoint | null>(null);
+  const [selectedMvpPlatform, setSelectedMvpPlatform] = useState<MvpPlatform>('lovable');
   const [painPointForm, setPainPointForm] = useState({
     title: '',
     fullText: '',
@@ -123,7 +128,19 @@ export default function Ideas() {
   });
 
   const generateMvpMutation = useMutation({
-    mutationFn: async (painPoint: PainPoint) => {
+    mutationFn: async ({ painPoint, platform }: { painPoint: PainPoint; platform: MvpPlatform }) => {
+      const painPointData: PainPointData = {
+        id: painPoint.id,
+        title: painPoint.title,
+        fullText: painPoint.fullText,
+        platform: painPoint.platform,
+        problemType: painPoint.problemType,
+        detectedNiche: painPoint.detectedNiche,
+        engagementScore: painPoint.engagementScore
+      };
+      
+      const generatedUrl = openMvpBuilder(platform, painPointData);
+      
       const ideaResponse = await apiRequest('/api/ideas', 'POST', {
         painPointId: painPoint.id,
         summaryText: painPoint.fullText?.substring(0, 500) || "Generated from pain point",
@@ -134,23 +151,28 @@ export default function Ideas() {
       });
       const idea = await ideaResponse.json();
       
+      const platformName = platform === 'lovable' ? 'Lovable' : platform === 'base44' ? 'Base44' : 'Replit';
       const mvpResponse = await apiRequest('/api/mvps', 'POST', {
         ideaId: idea.id,
         name: `MVP: ${painPoint.title?.substring(0, 50) || "New MVP"}`,
         description: `Generated MVP based on: ${painPoint.fullText?.substring(0, 200) || "pain point"}`,
-        platformSelected: "Replit",
-        status: "draft"
+        platformSelected: platformName,
+        generatedLink: generatedUrl,
+        status: "building"
       });
       return await mvpResponse.json();
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      const platformName = variables.platform === 'lovable' ? 'Lovable' : variables.platform === 'base44' ? 'Base44' : 'Replit';
       toast({
-        title: "MVP Created!",
-        description: "Your MVP has been generated and is ready in the MVPs section.",
+        title: "MVP Builder Opened!",
+        description: `${platformName} is now building your MVP. Check the new tab to continue.`,
       });
       queryClient.invalidateQueries({ queryKey: ['/api/ideas'] });
       queryClient.invalidateQueries({ queryKey: ['/api/mvps'] });
       queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
+      setIsMvpModalOpen(false);
+      setSelectedPainPointForMvp(null);
     },
     onError: (error: any) => {
       toast({
@@ -174,7 +196,14 @@ export default function Ideas() {
   };
 
   const handleGenerateMvp = (painPoint: PainPoint) => {
-    generateMvpMutation.mutate(painPoint);
+    setSelectedPainPointForMvp(painPoint);
+    setIsMvpModalOpen(true);
+  };
+
+  const confirmGenerateMvp = () => {
+    if (selectedPainPointForMvp) {
+      generateMvpMutation.mutate({ painPoint: selectedPainPointForMvp, platform: selectedMvpPlatform });
+    }
   };
 
   const handleAddPainPoint = () => {
@@ -483,6 +512,96 @@ export default function Ideas() {
           </div>
         </main>
       </div>
+
+      {/* MVP Platform Selection Modal */}
+      <Dialog open={isMvpModalOpen} onOpenChange={setIsMvpModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-orange-500" />
+              Generate MVP
+            </DialogTitle>
+            <DialogDescription>
+              Choose an AI-powered platform to build your MVP. The platform will open in a new tab with your idea prompt pre-loaded.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {selectedPainPointForMvp && (
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <p className="text-sm font-medium text-gray-900">{selectedPainPointForMvp.title}</p>
+                <p className="text-xs text-gray-600 mt-1 line-clamp-2">{selectedPainPointForMvp.fullText?.substring(0, 100)}...</p>
+              </div>
+            )}
+
+            <div>
+              <Label>Select MVP Builder Platform</Label>
+              <Select value={selectedMvpPlatform} onValueChange={(value) => setSelectedMvpPlatform(value as MvpPlatform)}>
+                <SelectTrigger className="mt-2" data-testid="select-mvp-platform">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="lovable">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">Lovable</span>
+                      <span className="text-xs text-gray-500">- AI-powered app builder</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="base44">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">Base44</span>
+                      <span className="text-xs text-gray-500">- No-code full-stack apps</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="replit">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">Replit</span>
+                      <span className="text-xs text-gray-500">- Code-first development</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-800">
+              <p className="font-medium">How it works:</p>
+              <ol className="list-decimal list-inside mt-1 space-y-1 text-xs">
+                <li>We'll generate a detailed prompt from this pain point</li>
+                <li>Open the selected platform in a new tab</li>
+                <li>The AI will start building your MVP automatically</li>
+              </ol>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setIsMvpModalOpen(false)}
+              data-testid="button-cancel-mvp"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={confirmGenerateMvp}
+              disabled={generateMvpMutation.isPending}
+              className="bg-orange-500 hover:bg-orange-600"
+              data-testid="button-confirm-mvp"
+            >
+              {generateMvpMutation.isPending ? (
+                <>
+                  <Loader className="w-4 h-4 mr-2 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Rocket className="w-4 h-4 mr-2" />
+                  Build MVP
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Add Pain Point Modal */}
       <Dialog open={isAddPainPointOpen} onOpenChange={setIsAddPainPointOpen}>
