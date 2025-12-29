@@ -141,14 +141,14 @@ export class WebhookHandlers {
       return;
     }
 
-    // Add monthly credits for recurring subscription
+    // Add monthly credits for recurring subscription (matching new pricing tiers)
     const tierCredits: Record<string, number> = {
-      starter: 500,
-      professional: 1500,
-      enterprise: 5000,
+      starter: 750,
+      professional: 2000,
+      enterprise: 6000,
     };
 
-    const credits = tierCredits[user.subscriptionTier] || 500;
+    const credits = tierCredits[user.subscriptionTier] || 750;
     await storage.addCredits(
       user.id,
       credits,

@@ -74,9 +74,9 @@ export class StripeService {
     const stripe = await getUncachableStripeClient();
     
     const tierPrices: Record<string, { amount: number; credits: number; name: string }> = {
-      starter: { amount: 2900, credits: 500, name: 'Starter Plan' },
-      professional: { amount: 7900, credits: 1500, name: 'Professional Plan' },
-      enterprise: { amount: 19900, credits: 5000, name: 'Enterprise Plan' },
+      starter: { amount: 4900, credits: 750, name: 'Starter Plan' },
+      professional: { amount: 9900, credits: 2000, name: 'Professional Plan' },
+      enterprise: { amount: 24900, credits: 6000, name: 'Enterprise Plan' },
     };
 
     const tier = tierPrices[tierId];

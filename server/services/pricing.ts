@@ -218,7 +218,7 @@ export function calculateJobCost(platforms: string[], painPointsExpected: number
   }, 0);
   
   // Add AI processing cost per expected pain point
-  const aiProcessingCost = painPointsExpected * CREDIT_COSTS.AI_SUMMARIZE_PAIN_POINT;
+  const aiProcessingCost = painPointsExpected * CREDIT_COSTS.AI_PAIN_POINT_SUMMARY;
   
   return scrapingCost + aiProcessingCost;
 }
