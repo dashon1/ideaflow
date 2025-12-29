@@ -18,69 +18,110 @@ export interface CreditCost {
   description: string;
 }
 
-// Credit cost structure (competitive with market)
+// Stage-based credit cost structure for the IdeaFlow OS
 export const CREDIT_COSTS: Record<string, number> = {
-  // Scraping operations (competitive with $0.002/request market rate)
+  // ===========================================
+  // STAGE 1: DISCOVERY (Platform Scraping)
+  // ===========================================
+  // Open/Easy platforms (1-2 credits)
   SCRAPE_REDDIT: 2,
-  SCRAPE_TIKTOK: 3, // Higher cost due to complexity
-  SCRAPE_TWITTER: 4, // Higher cost due to API fees
-  SCRAPE_QUORA: 2,
-  SCRAPE_LINKEDIN: 3,
-  SCRAPE_INSTAGRAM: 3,
-  SCRAPE_YOUTUBE: 2,
-  SCRAPE_FACEBOOK: 3,
-  SCRAPE_MEDIUM: 1,
   SCRAPE_HACKERNEWS: 1,
-  SCRAPE_PRODUCTHUNT: 2,
-  SCRAPE_INDIEHACKERS: 2,
+  SCRAPE_MEDIUM: 1,
   SCRAPE_GITHUB: 1,
   SCRAPE_STACKOVERFLOW: 1,
-  SCRAPE_DISCORD: 2,
-  SCRAPE_SLACK: 2,
+  SCRAPE_INDIEHACKERS: 2,
+  SCRAPE_PRODUCTHUNT: 2,
   
-  // AI processing operations (based on GPT-4o costs)
-  AI_SUMMARIZE_PAIN_POINT: 5, // ~$0.01 in GPT-4o costs
-  AI_CLASSIFY_IDEA: 3,
-  AI_GENERATE_MVP_SPEC: 15,
-  AI_CONTENT_GENERATION: 10,
+  // Standard platforms (3-4 credits)
+  SCRAPE_TIKTOK: 3,
+  SCRAPE_YOUTUBE: 3,
+  SCRAPE_QUORA: 3,
+  SCRAPE_INSTAGRAM: 4,
+  SCRAPE_FACEBOOK: 4,
+  SCRAPE_DISCORD: 3,
+  SCRAPE_SLACK: 3,
   
-  // Platform operations
-  MVP_GENERATION: 50, // External service costs
-  CONTENT_VIDEO_GENERATION: 25,
-  CONTENT_IMAGE_GENERATION: 8,
-  MARKETING_CAMPAIGN: 20,
+  // Premium platforms (5-6 credits)
+  SCRAPE_LINKEDIN: 6,
+  SCRAPE_TWITTER: 5,
+  SCRAPE_GLASSDOOR: 5,
+  SCRAPE_BLIND: 5,
+  
+  // Enterprise data sources (4-5 credits)
+  SCRAPE_G2: 4,
+  SCRAPE_CAPTERRA: 4,
+  SCRAPE_TRUSTPILOT: 4,
+  SCRAPE_AMAZON: 4,
+  SCRAPE_APPSTORE: 4,
+  SCRAPE_GOOGLEPLAY: 4,
+  
+  // ===========================================
+  // STAGE 2: AI PROCESSING
+  // ===========================================
+  AI_PAIN_POINT_SUMMARY: 3,
+  AI_DEEP_CLASSIFICATION: 5,
+  AI_OPPORTUNITY_SCORING: 4,
+  AI_TREND_DETECTION: 6,
+  AI_FULL_IDEA_REPORT: 10,
+  
+  // ===========================================
+  // STAGE 3: MVP GENERATION
+  // ===========================================
+  MVP_SPEC_GENERATION: 15,
+  MVP_BASIC_BUILD: 75,
+  MVP_FULL_BUILD: 150,
+  MVP_TEMPLATE_CUSTOMIZATION: 25,
+  
+  // ===========================================
+  // STAGE 4: CONTENT CREATION
+  // ===========================================
+  CONTENT_SOCIAL_POST: 3,
+  CONTENT_BLOG_ARTICLE: 8,
+  CONTENT_IMAGE_GENERATION: 10,
+  CONTENT_SHORT_VIDEO: 25,
+  CONTENT_FULL_VIDEO: 50,
+  CONTENT_LANDING_PAGE: 12,
+  
+  // ===========================================
+  // STAGE 5: DISTRIBUTION
+  // ===========================================
+  DISTRIBUTION_SOCIAL_PUBLISH: 2,
+  DISTRIBUTION_CAMPAIGN_SETUP: 15,
+  DISTRIBUTION_AB_TEST: 8,
+  DISTRIBUTION_ANALYTICS_REPORT: 5,
 };
 
-// Subscription tiers (competitive with market standards)
+// Subscription tiers - Premium positioning
 export const PRICING_TIERS: PricingTier[] = [
   {
     id: 'starter',
     name: 'Starter',
-    monthlyPrice: 29, // Competitive with ScraperAPI $49 but with more value
-    monthlyCredits: 500,
-    creditsPerDollar: 17.2, // 500 credits / $29
-    platforms: 5, // Reddit, TikTok, Quora, Product Hunt, Indie Hackers
+    monthlyPrice: 49,
+    monthlyCredits: 750,
+    creditsPerDollar: 15.3,
+    platforms: 5,
     features: [
-      '500 credits per month',
-      '5 social platforms',
-      'AI-powered pain point analysis',
-      'Basic idea classification',
+      '750 credits per month',
+      '5 social platforms (Reddit, TikTok, Quora, Product Hunt, Indie Hackers)',
+      'Pain point discovery',
+      'Basic AI analysis',
+      'Idea classification',
       'Email support',
-      'Basic dashboard',
+      'Dashboard access',
     ],
   },
   {
     id: 'professional',
     name: 'Professional',
-    monthlyPrice: 79,
-    monthlyCredits: 1500,
-    creditsPerDollar: 19.0, // Better value per credit
-    platforms: 15, // Major platforms
+    monthlyPrice: 99,
+    monthlyCredits: 2000,
+    creditsPerDollar: 20.2,
+    platforms: 15,
     features: [
-      '1,500 credits per month',
+      '2,000 credits per month',
       '15 social platforms',
-      'Advanced AI processing',
-      'MVP generation (2 per month)',
+      'Full AI processing suite',
+      'MVP generation (1-2 per month)',
       'Content creation tools',
       'Priority support',
       'Advanced analytics',
@@ -91,56 +132,56 @@ export const PRICING_TIERS: PricingTier[] = [
   {
     id: 'enterprise',
     name: 'Enterprise',
-    monthlyPrice: 199,
-    monthlyCredits: 5000,
-    creditsPerDollar: 25.1, // Best value per credit
-    platforms: 50, // All platforms
+    monthlyPrice: 249,
+    monthlyCredits: 6000,
+    creditsPerDollar: 24.1,
+    platforms: 50,
     features: [
-      '5,000 credits per month',
+      '6,000 credits per month',
       'All 50+ platforms',
       'Unlimited AI processing',
       'Unlimited MVP generation',
-      'Advanced content suite',
+      'Full content creation suite',
       'Custom integrations',
-      'Dedicated support',
+      'Dedicated account manager',
       'White-label options',
-      'Priority processing',
+      'Priority processing queue',
     ],
   },
 ];
 
-// Credit packages for pay-as-you-go (competitive pricing)
+// Credit packages for pay-as-you-go
 export const CREDIT_PACKAGES = [
   {
     name: 'Starter Pack',
-    credits: 100,
+    credits: 150,
     bonusCredits: 0,
-    priceUsd: 6.99, // $0.0699 per credit
-    stripePriceId: 'price_starter_100',
+    priceUsd: 9.99,
+    stripePriceId: 'price_starter_150',
     sortOrder: 1,
   },
   {
     name: 'Popular Pack',
-    credits: 500,
-    bonusCredits: 50, // 10% bonus
-    priceUsd: 29.99, // $0.0545 per credit (better value)
-    stripePriceId: 'price_popular_500',
+    credits: 600,
+    bonusCredits: 75,
+    priceUsd: 39.99,
+    stripePriceId: 'price_popular_600',
     sortOrder: 2,
   },
   {
     name: 'Power Pack',
-    credits: 1000,
-    bonusCredits: 150, // 15% bonus
-    priceUsd: 49.99, // $0.0435 per credit (best value)
-    stripePriceId: 'price_power_1000',
+    credits: 1500,
+    bonusCredits: 250,
+    priceUsd: 89.99,
+    stripePriceId: 'price_power_1500',
     sortOrder: 3,
   },
   {
     name: 'Enterprise Pack',
-    credits: 5000,
-    bonusCredits: 1000, // 20% bonus
-    priceUsd: 199.99, // $0.0333 per credit (enterprise rate)
-    stripePriceId: 'price_enterprise_5000',
+    credits: 6000,
+    bonusCredits: 1500,
+    priceUsd: 249.99,
+    stripePriceId: 'price_enterprise_6000',
     sortOrder: 4,
   },
 ];

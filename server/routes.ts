@@ -10,28 +10,48 @@ import { scrapeMultiplePlatforms } from "./services/platformApi";
 import { calculateJobCost, CREDIT_COSTS, hasplatformAccess, PRICING_TIERS, CREDIT_PACKAGES } from "./services/pricing";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Auth middleware - disabled for demo
-  // await setupAuth(app);
+  // Enable Replit authentication
+  await setupAuth(app);
 
-  // Auth routes - demo mode with credit information
+  // Helper to get authenticated user ID
+  const getUserId = (req: any): string | null => {
+    if (req.isAuthenticated && req.isAuthenticated() && req.user?.claims?.sub) {
+      return req.user.claims.sub;
+    }
+    return null;
+  };
+
+  // Auth routes - returns authenticated user with credit information
   app.get('/api/auth/user', async (req: any, res) => {
     try {
-      const userId = 'demo-user';
-      const credits = await storage.getUserCredits(userId);
+      const userId = getUserId(req);
       
-      // Return demo user with credit-based CRM data
+      if (!userId) {
+        return res.json(null);
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.json(null);
+      }
+      
+      const credits = await storage.getUserCredits(userId);
+      const { PLATFORM_ACCESS } = await import('./services/pricing');
+      const tierPlatforms = PLATFORM_ACCESS[user.subscriptionTier as keyof typeof PLATFORM_ACCESS] || PLATFORM_ACCESS.starter;
+      
       res.json({
-        id: userId,
-        email: 'demo@example.com',
-        firstName: 'Demo',
-        lastName: 'User',
-        subscriptionTier: 'starter',
-        subscriptionStatus: 'active',
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        profileImageUrl: user.profileImageUrl,
+        subscriptionTier: user.subscriptionTier || 'starter',
+        subscriptionStatus: user.subscriptionStatus || 'active',
         creditsBalance: credits.balance,
         creditsUsed: credits.used,
         monthlyCreditsIncluded: credits.monthlyIncluded,
-        platformAccess: ['reddit', 'tiktok', 'quora', 'producthunt', 'indiehackers'],
-        createdAt: new Date().toISOString(),
+        platformAccess: tierPlatforms,
+        createdAt: user.createdAt,
       });
     } catch (error) {
       console.error('Error fetching user:', error);
@@ -69,18 +89,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const config = tierConfigs[tier as keyof typeof tierConfigs];
       
-      // Return upgraded user
+      const userId = getUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Update user subscription tier
+      await storage.updateUser(userId, { subscriptionTier: tier });
+      
       res.json({
-        id: 'demo-user',
-        email: 'demo@example.com',
-        firstName: 'Demo',
-        lastName: 'User',
+        id: userId,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
         subscriptionTier: tier,
         subscriptionStatus: 'active',
         apiQuotaUsed: 0,
         apiQuotaLimit: config.apiQuota,
         platformAccess: config.platforms,
-        createdAt: new Date().toISOString(),
+        createdAt: user.createdAt,
       });
     } catch (error) {
       console.error("Error upgrading user tier:", error);
@@ -296,7 +328,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/scraper/start', async (req, res) => {
     try {
       const { jobType, platforms, targetNiche } = req.body;
-      const userId = 'demo-user'; // In production, get from authenticated user
+      const userId = getUserId(req);
+      
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized - please log in" });
+      }
       
       // Check if there's already an active job
       const activeJob = await storage.getActiveScrapingJob();
@@ -468,7 +504,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Settings routes
   app.get("/api/settings/:key", async (req: any, res) => {
     try {
-      const userId = 'demo-user';
+      const userId = getUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
       const { key } = req.params;
       
       const setting = await storage.getSetting(userId, key);
@@ -481,7 +520,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/settings", async (req: any, res) => {
     try {
-      const userId = 'demo-user';
+      const userId = getUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
       const { key, value } = req.body;
       
       const setting = await storage.setSetting({
@@ -651,9 +693,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Credit management routes
-  app.get("/api/credits/balance", async (req, res) => {
+  app.get("/api/credits/balance", async (req: any, res) => {
     try {
-      const userId = 'demo-user'; // In production, get from authenticated user
+      const userId = getUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
       const credits = await storage.getUserCredits(userId);
       res.json(credits);
     } catch (error) {
@@ -662,9 +707,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/credits/transactions", async (req, res) => {
+  app.get("/api/credits/transactions", async (req: any, res) => {
     try {
-      const userId = 'demo-user';
+      const userId = getUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
       const { limit = 50 } = req.query;
       const transactions = await storage.getCreditTransactions(userId, parseInt(limit as string));
       res.json(transactions);
@@ -684,9 +732,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/credits/purchase", async (req, res) => {
+  app.post("/api/credits/purchase", async (req: any, res) => {
     try {
-      const userId = 'demo-user';
+      const userId = getUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
       const { packageId, paymentIntentId } = req.body;
       
       const creditPackage = await storage.getCreditPackageById(packageId);
@@ -731,9 +782,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Stripe checkout routes
-  app.post("/api/stripe/checkout/credits", async (req, res) => {
+  app.post("/api/stripe/checkout/credits", async (req: any, res) => {
     try {
-      const userId = 'demo-user';
+      const userId = getUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized - please log in to purchase" });
+      }
       const { packageId } = req.body;
       
       const creditPackage = await storage.getCreditPackageById(packageId);
@@ -775,9 +829,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/stripe/checkout/subscription", async (req, res) => {
+  app.post("/api/stripe/checkout/subscription", async (req: any, res) => {
     try {
-      const userId = 'demo-user';
+      const userId = getUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized - please log in to subscribe" });
+      }
       const { tierId } = req.body;
       
       const { stripeService } = await import('./stripeService');
