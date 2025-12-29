@@ -436,41 +436,41 @@ export class DatabaseStorage implements IStorage {
         return;
       }
 
-      // Insert credit packages from pricing config
+      // Insert credit packages from pricing config (updated pricing)
       const packages = [
         {
           name: 'Starter Pack',
-          credits: 100,
+          credits: 150,
           bonusCredits: 0,
-          priceUsd: '6.99',
-          stripePriceId: 'price_starter_100',
+          priceUsd: '9.99',
+          stripePriceId: 'price_starter_150',
           isActive: true,
           sortOrder: 1,
         },
         {
           name: 'Popular Pack',
-          credits: 500,
-          bonusCredits: 50,
-          priceUsd: '29.99',
-          stripePriceId: 'price_popular_500',
+          credits: 600,
+          bonusCredits: 75,
+          priceUsd: '39.99',
+          stripePriceId: 'price_popular_600',
           isActive: true,
           sortOrder: 2,
         },
         {
           name: 'Power Pack',
-          credits: 1000,
-          bonusCredits: 150,
-          priceUsd: '49.99',
-          stripePriceId: 'price_power_1000',
+          credits: 1500,
+          bonusCredits: 250,
+          priceUsd: '89.99',
+          stripePriceId: 'price_power_1500',
           isActive: true,
           sortOrder: 3,
         },
         {
           name: 'Enterprise Pack',
-          credits: 5000,
-          bonusCredits: 1000,
-          priceUsd: '199.99',
-          stripePriceId: 'price_enterprise_5000',
+          credits: 6000,
+          bonusCredits: 1500,
+          priceUsd: '249.99',
+          stripePriceId: 'price_enterprise_6000',
           isActive: true,
           sortOrder: 4,
         },
