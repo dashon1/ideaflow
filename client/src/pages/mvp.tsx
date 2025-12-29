@@ -80,8 +80,8 @@ export default function MVP() {
     });
   };
 
-  const activeMvps = mvps.filter((mvp: any) => mvp.status === 'development' || mvp.status === 'building');
-  const deployedMvps = mvps.filter((mvp: any) => mvp.status === 'deployed' || mvp.status === 'live');
+  const activeMvps = mvps.filter((mvp: any) => mvp.status === 'draft' || mvp.status === 'development' || mvp.status === 'building');
+  const deployedMvps = mvps.filter((mvp: any) => mvp.status === 'deployed' || mvp.status === 'completed' || mvp.status === 'live');
   const totalMvps = mvps.length;
   const avgConversion = totalMvps > 0 ? 3.2 : 0;
 
@@ -211,7 +211,7 @@ export default function MVP() {
                         data-testid={`mvp-${mvp.id}`}
                       >
                         <div>
-                          <h3 className="font-medium text-gray-900">{mvp.title || mvp.ideaId}</h3>
+                          <h3 className="font-medium text-gray-900">{mvp.name || mvp.title || mvp.ideaId}</h3>
                           <p className="text-sm text-gray-600">{mvp.description || 'No description'}</p>
                           {mvp.url && (
                             <a href={mvp.url} className="text-xs text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">

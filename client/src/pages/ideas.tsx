@@ -126,11 +126,10 @@ export default function Ideas() {
     mutationFn: async (painPoint: PainPoint) => {
       const ideaResponse = await apiRequest('/api/ideas', 'POST', {
         painPointId: painPoint.id,
-        title: painPoint.title || "Untitled Idea",
-        summary: painPoint.fullText?.substring(0, 200) || "Generated from pain point",
+        summaryText: painPoint.fullText?.substring(0, 500) || "Generated from pain point",
         problemType: painPoint.problemType || "Pain Point",
-        detectedNiche: painPoint.detectedNiche,
-        confidenceScore: painPoint.engagementScore || 50,
+        domain: painPoint.detectedNiche || "General",
+        confidenceScore: ((painPoint.engagementScore || 50) / 100).toFixed(2),
         status: "approved"
       });
       const idea = await ideaResponse.json();
