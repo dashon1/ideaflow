@@ -101,15 +101,39 @@ export async function setupAuth(app: Express) {
   passport.serializeUser((user: Express.User, cb) => cb(null, user));
   passport.deserializeUser((user: Express.User, cb) => cb(null, user));
 
+  // Store configured domains for validation
+  const configuredDomains = new Set(process.env.REPLIT_DOMAINS?.split(',') || []);
+  
   app.get("/api/login", (req, res, next) => {
-    passport.authenticate(`replitauth:${req.hostname}`, {
+    const hostname = req.hostname;
+    
+    // Check if this hostname has a configured strategy
+    if (!configuredDomains.has(hostname)) {
+      // Redirect to primary domain for authentication
+      const primaryDomain = process.env.REPLIT_DOMAINS?.split(',')[0];
+      if (primaryDomain && primaryDomain !== hostname) {
+        return res.redirect(`https://${primaryDomain}/api/login`);
+      }
+      return res.status(400).json({ 
+        message: 'Authentication not available on this domain',
+        hint: 'Please access the app via its Replit URL'
+      });
+    }
+    
+    passport.authenticate(`replitauth:${hostname}`, {
       prompt: "login consent",
       scope: ["openid", "email", "profile", "offline_access"],
     })(req, res, next);
   });
 
   app.get("/api/callback", (req, res, next) => {
-    passport.authenticate(`replitauth:${req.hostname}`, {
+    const hostname = req.hostname;
+    
+    if (!configuredDomains.has(hostname)) {
+      return res.status(400).json({ message: 'Invalid callback domain' });
+    }
+    
+    passport.authenticate(`replitauth:${hostname}`, {
       successReturnToOrRedirect: "/",
       failureRedirect: "/api/login",
     })(req, res, next);
