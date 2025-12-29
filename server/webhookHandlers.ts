@@ -85,8 +85,8 @@ export class WebhookHandlers {
         stripeCustomerId: customer,
       });
 
-      // Add monthly credits
-      const monthlyCredits = parseInt(metadata.monthlyCredits || '500');
+      // Add monthly credits (default to starter tier 750 if missing)
+      const monthlyCredits = parseInt(metadata.monthlyCredits || '750');
       await storage.addCredits(
         userId,
         monthlyCredits,
