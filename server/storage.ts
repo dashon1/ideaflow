@@ -47,6 +47,7 @@ export interface IStorage {
   }): Promise<PainPoint[]>;
   updatePainPointStatus(id: string, status: string): Promise<void>;
   getPainPointById(id: string): Promise<PainPoint | undefined>;
+  getPainPointByHash(uniqueHash: string): Promise<PainPoint | undefined>;
 
   // Idea operations
   createIdea(idea: InsertIdea): Promise<Idea>;
@@ -159,6 +160,11 @@ export class DatabaseStorage implements IStorage {
 
   async getPainPointById(id: string): Promise<PainPoint | undefined> {
     const [painPoint] = await db.select().from(painPoints).where(eq(painPoints.id, id));
+    return painPoint;
+  }
+
+  async getPainPointByHash(uniqueHash: string): Promise<PainPoint | undefined> {
+    const [painPoint] = await db.select().from(painPoints).where(eq(painPoints.uniqueHash, uniqueHash));
     return painPoint;
   }
 

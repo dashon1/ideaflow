@@ -1,40 +1,40 @@
 // Complete list of 50+ platforms for comprehensive pain point discovery
 export const ALL_PLATFORMS = [
-  // Core Social Media (Standard Tier)
-  { id: 'reddit', name: 'Reddit', category: 'Social', tier: 'standard', active: true },
-  { id: 'tiktok', name: 'TikTok', category: 'Video', tier: 'standard', active: true },
-  { id: 'quora', name: 'Quora', category: 'Q&A', tier: 'standard', active: true },
-  { id: 'producthunt', name: 'Product Hunt', category: 'Tech', tier: 'standard', active: true },
-  { id: 'indiehackers', name: 'Indie Hackers', category: 'Startup', tier: 'standard', active: true },
+  // Core Platforms (Starter Tier) - Free APIs available
+  { id: 'reddit', name: 'Reddit', category: 'Social', tier: 'starter', active: true },
+  { id: 'hackernews', name: 'Hacker News', category: 'Tech', tier: 'starter', active: true },
+  { id: 'github', name: 'GitHub Issues', category: 'Development', tier: 'starter', active: true },
+  { id: 'producthunt', name: 'Product Hunt', category: 'Tech', tier: 'starter', active: true },
+  { id: 'quora', name: 'Quora', category: 'Q&A', tier: 'starter', active: true },
+  { id: 'tiktok', name: 'TikTok', category: 'Video', tier: 'starter', active: true },
+  { id: 'indiehackers', name: 'Indie Hackers', category: 'Startup', tier: 'starter', active: true },
   
-  // Professional Networks (Pro Tier)
-  { id: 'linkedin', name: 'LinkedIn', category: 'Professional', tier: 'pro', active: true },
-  { id: 'twitter', name: 'Twitter/X', category: 'Social', tier: 'pro', active: true },
-  { id: 'facebook', name: 'Facebook', category: 'Social', tier: 'pro', active: true },
-  { id: 'facebookgroups', name: 'Facebook Groups', category: 'Community', tier: 'pro', active: true },
-  { id: 'instagram', name: 'Instagram', category: 'Visual', tier: 'pro', active: true },
-  { id: 'youtube', name: 'YouTube', category: 'Video', tier: 'pro', active: true },
-  { id: 'glassdoor', name: 'Glassdoor', category: 'Professional', tier: 'pro', active: true },
-  { id: 'indeed', name: 'Indeed', category: 'Professional', tier: 'pro', active: true },
+  // Professional Networks (Professional Tier)
+  { id: 'linkedin', name: 'LinkedIn', category: 'Professional', tier: 'professional', active: true },
+  { id: 'twitter', name: 'Twitter/X', category: 'Social', tier: 'professional', active: true },
+  { id: 'facebook', name: 'Facebook', category: 'Social', tier: 'professional', active: true },
+  { id: 'facebookgroups', name: 'Facebook Groups', category: 'Community', tier: 'professional', active: true },
+  { id: 'instagram', name: 'Instagram', category: 'Visual', tier: 'professional', active: true },
+  { id: 'youtube', name: 'YouTube', category: 'Video', tier: 'professional', active: true },
+  { id: 'glassdoor', name: 'Glassdoor', category: 'Professional', tier: 'professional', active: true },
+  { id: 'indeed', name: 'Indeed', category: 'Professional', tier: 'professional', active: true },
   
-  // E-commerce & Reviews (Pro Tier)
-  { id: 'amazon', name: 'Amazon Reviews', category: 'Reviews', tier: 'pro', active: true },
-  { id: 'googleplay', name: 'Google Play Store', category: 'Reviews', tier: 'pro', active: true },
-  { id: 'appstore', name: 'App Store', category: 'Reviews', tier: 'pro', active: true },
-  { id: 'trustpilot', name: 'Trustpilot', category: 'Reviews', tier: 'pro', active: true },
-  { id: 'g2', name: 'G2', category: 'Reviews', tier: 'pro', active: true },
-  { id: 'capterra', name: 'Capterra', category: 'Reviews', tier: 'pro', active: true },
-  { id: 'yelp', name: 'Yelp', category: 'Reviews', tier: 'pro', active: true },
-  { id: 'bbb', name: 'Better Business Bureau', category: 'Reviews', tier: 'pro', active: true },
-  { id: 'etsy', name: 'Etsy Reviews', category: 'Reviews', tier: 'pro', active: true },
+  // E-commerce & Reviews (Professional Tier)
+  { id: 'amazon', name: 'Amazon Reviews', category: 'Reviews', tier: 'professional', active: true },
+  { id: 'googleplay', name: 'Google Play Store', category: 'Reviews', tier: 'professional', active: true },
+  { id: 'appstore', name: 'App Store', category: 'Reviews', tier: 'professional', active: true },
+  { id: 'trustpilot', name: 'Trustpilot', category: 'Reviews', tier: 'professional', active: true },
+  { id: 'g2', name: 'G2', category: 'Reviews', tier: 'professional', active: true },
+  { id: 'capterra', name: 'Capterra', category: 'Reviews', tier: 'professional', active: true },
+  { id: 'yelp', name: 'Yelp', category: 'Reviews', tier: 'professional', active: true },
+  { id: 'bbb', name: 'Better Business Bureau', category: 'Reviews', tier: 'professional', active: true },
+  { id: 'etsy', name: 'Etsy Reviews', category: 'Reviews', tier: 'professional', active: true },
   
-  // Developer Communities (Pro Tier)
-  { id: 'github', name: 'GitHub Issues', category: 'Development', tier: 'pro', active: true },
-  { id: 'stackoverflow', name: 'Stack Overflow', category: 'Development', tier: 'pro', active: true },
-  { id: 'stackexchange', name: 'Stack Exchange', category: 'Development', tier: 'pro', active: true },
-  { id: 'devto', name: 'Dev.to', category: 'Development', tier: 'pro', active: true },
-  { id: 'medium', name: 'Medium Tech Blogs', category: 'Content', tier: 'pro', active: true },
-  { id: 'hackernews', name: 'Hacker News', category: 'Tech', tier: 'pro', active: true },
+  // Developer Communities (Professional Tier)
+  { id: 'stackoverflow', name: 'Stack Overflow', category: 'Development', tier: 'professional', active: true },
+  { id: 'stackexchange', name: 'Stack Exchange', category: 'Development', tier: 'professional', active: true },
+  { id: 'devto', name: 'Dev.to', category: 'Development', tier: 'professional', active: true },
+  { id: 'medium', name: 'Medium Tech Blogs', category: 'Content', tier: 'professional', active: true },
   
   // Content & Publishing (Elite Tier)
   { id: 'substack', name: 'Substack', category: 'Content', tier: 'elite', active: true },
@@ -82,19 +82,19 @@ export const ALL_PLATFORMS = [
 ] as const;
 
 export const TIER_LIMITS = {
-  standard: {
-    platforms: ALL_PLATFORMS.map(p => p.id), // Give standard access to all platforms for demo
+  starter: {
+    platforms: ALL_PLATFORMS.filter(p => p.tier === 'starter').map(p => p.id),
     maxJobsPerDay: 3,
     apiQuota: 100,
-    features: ['Full platform access for demo', 'Pain point discovery', 'Simple analytics']
+    features: ['Core platform access', 'Pain point discovery', 'Simple analytics']
   },
-  pro: {
-    platforms: ALL_PLATFORMS.map(p => p.id), // All platforms
+  professional: {
+    platforms: ALL_PLATFORMS.filter(p => p.tier === 'starter' || p.tier === 'professional').map(p => p.id),
     maxJobsPerDay: 10,
     apiQuota: 500,
     features: ['Advanced scraping', 'AI analysis', 'MVP generation', 'Content creation']
   },
-  elite: {
+  enterprise: {
     platforms: ALL_PLATFORMS.map(p => p.id), // All platforms
     maxJobsPerDay: -1, // Unlimited
     apiQuota: -1, // Unlimited
@@ -125,9 +125,11 @@ export const PLATFORM_CATEGORIES = [
   'Startup'
 ] as const;
 
-export function getPlatformsByTier(tier: 'standard' | 'pro' | 'elite') {
-  // For demo purposes, all tiers get access to all platforms
-  return ALL_PLATFORMS;
+export function getPlatformsByTier(tier: string) {
+  // Return platforms available for the user's tier
+  const tierKey = tier as keyof typeof TIER_LIMITS;
+  const tierPlatformIds = TIER_LIMITS[tierKey]?.platforms || TIER_LIMITS.starter.platforms;
+  return ALL_PLATFORMS.filter(p => (tierPlatformIds as readonly string[]).includes(p.id));
 }
 
 export function getPlatformsByCategory(category: string) {

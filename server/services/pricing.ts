@@ -189,12 +189,12 @@ export const CREDIT_PACKAGES = [
 // Platform access by tier
 export const PLATFORM_ACCESS = {
   starter: [
-    'reddit', 'tiktok', 'quora', 'producthunt', 'indiehackers'
+    'reddit', 'hackernews', 'github', 'producthunt', 'quora', 'tiktok', 'indiehackers'
   ],
   professional: [
-    'reddit', 'tiktok', 'quora', 'producthunt', 'indiehackers',
+    'reddit', 'hackernews', 'github', 'producthunt', 'quora', 'tiktok', 'indiehackers',
     'linkedin', 'twitter', 'facebook', 'instagram', 'youtube',
-    'medium', 'hackernews', 'github', 'stackoverflow', 'discord'
+    'medium', 'stackoverflow', 'discord'
   ],
   enterprise: [
     // All 50+ platforms

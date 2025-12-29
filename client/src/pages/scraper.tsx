@@ -43,7 +43,7 @@ interface ScrapingJob {
 }
 
 export default function Scraper() {
-  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(['reddit', 'tiktok', 'quora']);
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [scrapingMode, setScrapingMode] = useState<'discovery' | 'niche'>('discovery');
   const [targetNiche, setTargetNiche] = useState('');
   const [isConfiguring, setIsConfiguring] = useState(false);
@@ -59,8 +59,8 @@ export default function Scraper() {
     queryKey: ['/api/auth/user'],
   });
 
-  const userTier = (user as any)?.subscriptionTier || 'standard';
-  const availablePlatforms = getPlatformsByTier(userTier as 'standard' | 'pro' | 'elite');
+  const userTier = (user as any)?.subscriptionTier || 'starter';
+  const availablePlatforms = getPlatformsByTier(userTier);
   
   // Filter platforms by selected category
   const displayPlatforms = availablePlatforms.filter(platform => 
@@ -180,6 +180,7 @@ export default function Scraper() {
           disabled={startScrapingMutation.isPending || !!currentJob}
           className="bg-primary-600 hover:bg-primary-700"
           size="lg"
+          data-testid="button-start-scraping"
         >
           {startScrapingMutation.isPending || currentJob ? (
             <Loader className="w-4 h-4 mr-2 animate-spin" />
@@ -285,6 +286,7 @@ export default function Scraper() {
                       : 'border-gray-200 hover:border-gray-300 dark:border-gray-700'
                   } ${!platform.active ? 'opacity-50' : ''}`}
                   onClick={() => platform.active && togglePlatform(platform.id)}
+                  data-testid={`platform-${platform.id}`}
                 >
                   <Checkbox 
                     checked={selectedPlatforms.includes(platform.id)}
@@ -347,8 +349,7 @@ export default function Scraper() {
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    const platformIds = displayPlatforms.map(p => p.id);
-                    setSelectedPlatforms(selectedPlatforms.filter(id => !platformIds.includes(id)));
+                    setSelectedPlatforms([]);
                   }}
                 >
                   Deselect All

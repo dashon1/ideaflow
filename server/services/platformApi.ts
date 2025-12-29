@@ -200,19 +200,27 @@ export class PlatformAPI {
   // Platform-specific scraping implementations
   async scrapeReddit(subreddit: string, query?: string): Promise<InsertPainPoint[]> {
     try {
-      const endpoint = `/r/${subreddit}/search`;
-      const params = {
-        q: query || 'problem frustration need want',
-        restrict_sr: 'true',
-        sort: 'relevance',
-        limit: 25,
-        t: 'week'
-      };
-
-      const data = await this.makeRequest(endpoint, params);
+      // Use public Reddit JSON API (no auth needed)
+      const searchQuery = query || 'problem frustration need want';
+      const url = `https://www.reddit.com/r/${subreddit}/search.json?q=${encodeURIComponent(searchQuery)}&restrict_sr=1&sort=relevance&limit=25&t=week`;
+      console.log(`[Reddit] Fetching: r/${subreddit}`);
+      
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'IdeaFlow-Bot/1.0'
+        }
+      });
+      
+      if (!response.ok) {
+        console.error(`[Reddit] API error: ${response.status}`);
+        return [];
+      }
+      
+      const data = await response.json();
+      console.log(`[Reddit] Got ${data.data?.children?.length || 0} results from r/${subreddit}`);
       return this.parseRedditData(data);
     } catch (error) {
-      console.error('Reddit scraping error:', error);
+      console.error('[Reddit] Scraping error:', error);
       return [];
     }
   }
@@ -236,35 +244,49 @@ export class PlatformAPI {
 
   async scrapeGitHub(query: string): Promise<InsertPainPoint[]> {
     try {
-      const endpoint = '/search/issues';
-      const params = {
-        q: `${query} is:issue state:open`,
-        sort: 'reactions',
-        order: 'desc',
-        per_page: 50
-      };
-
-      const data = await this.makeRequest(endpoint, params);
+      // Use public GitHub API directly (no auth needed, rate limited)
+      const url = `https://api.github.com/search/issues?q=${encodeURIComponent(query)}+is:issue+state:open&sort=reactions&order=desc&per_page=25`;
+      console.log(`[GitHub] Fetching: ${url}`);
+      
+      const response = await fetch(url, {
+        headers: {
+          'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'IdeaFlow-Bot/1.0'
+        }
+      });
+      
+      if (!response.ok) {
+        console.error(`[GitHub] API error: ${response.status}`);
+        return [];
+      }
+      
+      const data = await response.json();
+      console.log(`[GitHub] Got ${data.items?.length || 0} results`);
       return this.parseGitHubData(data);
     } catch (error) {
-      console.error('GitHub scraping error:', error);
+      console.error('[GitHub] Scraping error:', error);
       return [];
     }
   }
 
   async scrapeHackerNews(query: string): Promise<InsertPainPoint[]> {
     try {
-      const params = {
-        query,
-        tags: 'story',
-        hitsPerPage: 50,
-        numericFilters: 'created_at_i>=' + (Date.now()/1000 - 7*24*3600) // Last 7 days
-      };
-
-      const data = await this.makeRequest(this.config.endpoints.search!, params);
+      // Use public Algolia HN API directly (no auth needed)
+      const url = `https://hn.algolia.com/api/v1/search?query=${encodeURIComponent(query)}&tags=story&hitsPerPage=25`;
+      console.log(`[HackerNews] Fetching: ${url}`);
+      
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        console.error(`[HackerNews] API error: ${response.status}`);
+        return [];
+      }
+      
+      const data = await response.json();
+      console.log(`[HackerNews] Got ${data.hits?.length || 0} results`);
       return this.parseHackerNewsData(data);
     } catch (error) {
-      console.error('Hacker News scraping error:', error);
+      console.error('[HackerNews] Scraping error:', error);
       return [];
     }
   }
@@ -399,9 +421,12 @@ export async function scrapeMultiplePlatforms(
   query: string = 'problem need frustration',
   mode: string = 'discovery'
 ): Promise<InsertPainPoint[]> {
+  console.log(`[scrapeMultiplePlatforms] Called with platforms: ${JSON.stringify(platforms)}, query: "${query}", mode: "${mode}"`);
   const results: InsertPainPoint[] = [];
   
   for (const platform of platforms) {
+    console.log(`[scrapeMultiplePlatforms] Processing platform: "${platform}" (lowercase: "${platform.toLowerCase()}")`);
+    
     try {
       const api = createPlatformAPI(platform);
       let platformResults: InsertPainPoint[] = [];
@@ -425,11 +450,20 @@ export async function scrapeMultiplePlatforms(
           break;
           
         case 'hackernews':
+        case 'hacker news':
+          console.log(`[scrapeMultiplePlatforms] Calling scrapeHackerNews with query: "${query}"`);
           platformResults = await api.scrapeHackerNews(query);
+          console.log(`[scrapeMultiplePlatforms] HackerNews returned ${platformResults.length} results`);
+          break;
+        
+        case 'producthunt':
+        case 'product hunt':
+          // Product Hunt requires GraphQL with auth - skip for now
+          console.log(`[ProductHunt] Skipping - requires authenticated API`);
           break;
           
         default:
-          console.warn(`Scraping not implemented for platform: ${platform}`);
+          console.warn(`[Scraper] Platform not implemented: ${platform}`);
       }
       
       results.push(...platformResults);

@@ -5,7 +5,7 @@ import { setupAuth, isAuthenticated } from "./replitAuth";
 import { z } from "zod";
 import { insertPainPointSchema, insertIdeaSchema, insertMvpSchema } from "@shared/schema";
 import { summarizeIdea, classifyIdea } from "./services/openai";
-import { scrapePlatform } from "./services/scraper";
+import { scrapeAllPlatforms } from "./services/scraper";
 import { scrapeMultiplePlatforms } from "./services/platformApi";
 import { calculateJobCost, CREDIT_COSTS, hasplatformAccess, PRICING_TIERS, CREDIT_PACKAGES } from "./services/pricing";
 
@@ -425,39 +425,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
           let foundPainPoints: any[] = [];
           const query = targetNiche || 'problem need frustration want';
           
-          // Try live platform APIs first, fall back to mock data if empty/failed
-          let usedFallback = false;
+          // Use real platform APIs only - no mock data
+          console.log(`[Scraper] Starting LIVE scraping for platforms: ${platforms.join(', ')}`);
           
           try {
             foundPainPoints = await scrapeMultiplePlatforms(platforms, query, jobType);
-            console.log(`Live scraping returned ${foundPainPoints.length} results`);
+            console.log(`[Scraper] Live APIs returned ${foundPainPoints.length} results`);
           } catch (scrapingError) {
-            console.error('Live scraping threw error:', scrapingError);
+            console.error('[Scraper] Live scraping error:', scrapingError);
             foundPainPoints = [];
           }
           
-          // If live APIs returned nothing, use mock data
           if (foundPainPoints.length === 0) {
-            console.log('Using fallback mock data since live APIs returned no results');
-            usedFallback = true;
-            
-            for (const platform of platforms) {
-              const mockData = await scrapePlatform(platform, jobType, targetNiche);
-              foundPainPoints.push(...mockData);
-            }
+            console.log('[Scraper] No results from live APIs - job completing with 0 pain points');
           }
           
-          // Save all pain points to database
+          // Save all pain points to database (deduplicating by uniqueHash)
           let savedCount = 0;
+          let duplicateCount = 0;
           for (const painPoint of foundPainPoints) {
             try {
+              // Check for duplicates by uniqueHash
+              if (painPoint.uniqueHash) {
+                const existing = await storage.getPainPointByHash(painPoint.uniqueHash);
+                if (existing) {
+                  duplicateCount++;
+                  continue;
+                }
+              }
               await storage.createPainPoint(painPoint);
               savedCount++;
             } catch (saveError) {
-              console.error('Failed to save pain point:', saveError);
+              console.error('[Scraper] Failed to save pain point:', saveError);
             }
           }
-          console.log(`Saved ${savedCount}/${foundPainPoints.length} pain points to database`);
+          console.log(`[Scraper] Saved ${savedCount} new, skipped ${duplicateCount} duplicates`);
           
           await storage.updateScrapingJob(job.id, {
             progress: 60,
@@ -481,8 +483,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             completedAt: new Date(),
             metadata: {
               ...jobData.metadata,
-              fallbackUsed: usedFallback,
-              savedToDB: savedCount
+              liveApiOnly: true,
+              savedToDB: savedCount,
+              duplicatesSkipped: duplicateCount
             }
           });
           
