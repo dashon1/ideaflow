@@ -232,6 +232,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/ideas", async (req, res) => {
+    try {
+      const validatedData = insertIdeaSchema.parse(req.body);
+      const idea = await storage.createIdea(validatedData);
+      res.json(idea);
+    } catch (error) {
+      console.error("Error creating idea:", error);
+      res.status(500).json({ message: "Failed to create idea" });
+    }
+  });
+
   app.patch("/api/ideas/:id/approve", async (req, res) => {
     try {
       const { id } = req.params;

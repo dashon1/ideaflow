@@ -122,6 +122,62 @@ export default function Ideas() {
     },
   });
 
+  const generateMvpMutation = useMutation({
+    mutationFn: async (painPoint: PainPoint) => {
+      const ideaResponse = await apiRequest('/api/ideas', 'POST', {
+        painPointId: painPoint.id,
+        title: painPoint.title || "Untitled Idea",
+        summary: painPoint.fullText?.substring(0, 200) || "Generated from pain point",
+        problemType: painPoint.problemType || "Pain Point",
+        detectedNiche: painPoint.detectedNiche,
+        confidenceScore: painPoint.engagementScore || 50,
+        status: "approved"
+      });
+      const idea = await ideaResponse.json();
+      
+      const mvpResponse = await apiRequest('/api/mvps', 'POST', {
+        ideaId: idea.id,
+        name: `MVP: ${painPoint.title?.substring(0, 50) || "New MVP"}`,
+        description: `Generated MVP based on: ${painPoint.fullText?.substring(0, 200) || "pain point"}`,
+        platformSelected: "Replit",
+        status: "draft"
+      });
+      return await mvpResponse.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "MVP Created!",
+        description: "Your MVP has been generated and is ready in the MVPs section.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/ideas'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/mvps'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "MVP Generation Failed",
+        description: error.message || "Failed to generate MVP. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleViewSource = (painPoint: PainPoint) => {
+    if (painPoint.sourceLink) {
+      window.open(painPoint.sourceLink, '_blank', 'noopener,noreferrer');
+    } else {
+      toast({
+        title: "No Source URL",
+        description: "This pain point doesn't have a source URL associated with it.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleGenerateMvp = (painPoint: PainPoint) => {
+    generateMvpMutation.mutate(painPoint);
+  };
+
   const handleAddPainPoint = () => {
     if (!painPointForm.title.trim() || !painPointForm.fullText.trim()) {
       toast({
@@ -377,6 +433,8 @@ export default function Ideas() {
                             variant="outline" 
                             size="sm" 
                             className="flex-1 text-xs border-gray-300 hover:bg-gray-50"
+                            onClick={() => handleViewSource(painPoint)}
+                            data-testid={`button-view-source-${painPoint.id}`}
                           >
                             <ExternalLink className="w-3 h-3 mr-1" />
                             View Source
@@ -384,8 +442,15 @@ export default function Ideas() {
                           <Button 
                             size="sm" 
                             className="flex-1 text-xs bg-orange-500 hover:bg-orange-600 text-white"
+                            onClick={() => handleGenerateMvp(painPoint)}
+                            disabled={generateMvpMutation.isPending}
+                            data-testid={`button-generate-mvp-${painPoint.id}`}
                           >
-                            <Rocket className="w-3 h-3 mr-1" />
+                            {generateMvpMutation.isPending ? (
+                              <Loader className="w-3 h-3 mr-1 animate-spin" />
+                            ) : (
+                              <Rocket className="w-3 h-3 mr-1" />
+                            )}
                             Generate MVP
                           </Button>
                         </div>
