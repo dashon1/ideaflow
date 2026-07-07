@@ -188,21 +188,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             status: "pending",
           });
         } catch (error) {
-          console.log("OpenAI API not available, using mock data for idea generation");
-          // Fallback to mock idea generation
-          await storage.createIdea({
-            painPointId: id,
-            summaryText: `AI-generated solution for: ${(painPoint.title || "Unknown problem").substring(0, 80)}...`,
-            problemType: painPoint.problemType || "Pain Point",
-            confidenceScore: (Math.random() * 40 + 60).toFixed(1),
-            tags: [painPoint.detectedNiche || "General", painPoint.problemType || "Pain Point", 'validated'],
-            userType: ['entrepreneurs', 'small business', 'consumers', 'professionals'][Math.floor(Math.random() * 4)],
-            domain: painPoint.detectedNiche || "General",
-            appType: ['web', 'mobile', 'saas', 'marketplace'][Math.floor(Math.random() * 4)],
-            priorityScore: (Math.random() * 30 + 70).toFixed(1),
-            isWellSolved: Math.random() < 0.3,
-            status: "pending",
-          });
+          console.error("OpenAI API error during idea generation:", error);
+          // Do not generate mock ideas - require real AI processing
         }
       }
       
@@ -561,12 +548,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get recent scraping jobs for pipeline status
       const recentJobs = await storage.getScrapingJobs(5);
       
-      // Mock pipeline data for demonstration
+      const allPainPoints = await storage.getPainPoints();
+      const allIdeas = await storage.getIdeas();
       const pipelineData = {
         totalJobs: recentJobs.length,
         activeJobs: recentJobs.filter(job => job.status === 'running').length,
         completedJobs: recentJobs.filter(job => job.status === 'completed').length,
         failedJobs: recentJobs.filter(job => job.status === 'failed').length,
+        totalPainPoints: allPainPoints.length,
+        totalIdeas: allIdeas.length,
         currentTasks: recentJobs.filter(job => job.status === 'running').map(job => ({
           id: job.id,
           agent: job.currentAgent,
@@ -575,11 +565,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           estimatedTimeRemaining: Math.max(0, Math.round((100 - (job.progress || 0)) * 0.3)) + " minutes"
         })),
         agents: [
-          { name: "Scraper Agent", status: "active", tasksProcessed: 42 },
-          { name: "Pain Point Summarizer", status: "active", tasksProcessed: 38 },
-          { name: "Content Agent", status: "idle", tasksProcessed: 15 },
-          { name: "Template Discovery Agent", status: "idle", tasksProcessed: 12 },
-          { name: "Marketing Agent", status: "idle", tasksProcessed: 8 }
+          { name: "Scraper Agent", status: recentJobs.some(j => j.status === 'running') ? "active" : "idle", tasksProcessed: recentJobs.filter(j => j.status === 'completed').length },
+          { name: "Pain Point Summarizer", status: allPainPoints.some(p => p.status === 'pending') ? "active" : "idle", tasksProcessed: allPainPoints.filter(p => p.status === 'approved').length },
+          { name: "Content Agent", status: "idle", tasksProcessed: 0 },
+          { name: "Template Discovery Agent", status: "idle", tasksProcessed: 0 },
+          { name: "Marketing Agent", status: "idle", tasksProcessed: 0 }
         ]
       };
       
@@ -593,7 +583,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Agent management routes
   app.get("/api/agents", async (req, res) => {
     try {
-      // Mock agent configurations for demonstration
       const agents = [
         {
           id: "scraper",

@@ -164,6 +164,43 @@ export async function scrapeReddit(subreddit: string, query: string): Promise<In
   }
 }
 
+export async function scrapeStackOverflow(query: string): Promise<InsertPainPoint[]> {
+  try {
+    const url = `https://api.stackexchange.com/2.3/search/advanced?order=desc&sort=votes&q=${encodeURIComponent(query)}&site=stackoverflow&pagesize=25&filter=default`;
+    console.log(`[StackOverflow] Fetching: ${url}`);
+    
+    const response = await fetch(url, {
+      headers: { 'Accept-Encoding': 'identity' }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`StackOverflow API error: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    const items = data.items || [];
+    console.log(`[StackOverflow] Got ${items.length} results`);
+    
+    return items
+      .filter((q: any) => q.title && q.score >= 0)
+      .map((q: any) => ({
+        platform: 'Stack Overflow',
+        sourceLink: q.link,
+        title: q.title.substring(0, 200),
+        fullText: `${q.title}. Tags: ${(q.tags || []).join(', ')}`.substring(0, 2000),
+        engagementScore: q.score + (q.answer_count || 0) + (q.view_count || 0),
+        detectedNiche: 'Development',
+        problemType: detectProblemType(q.title),
+        mode: 'Discovery',
+        status: 'pending',
+        uniqueHash: generateHash(q.title, 'StackOverflow'),
+      }));
+  } catch (error) {
+    console.error('[StackOverflow] Scraping error:', error);
+    throw error;
+  }
+}
+
 export async function scrapeProductHunt(): Promise<InsertPainPoint[]> {
   try {
     const url = 'https://www.producthunt.com/frontend/graphql';
@@ -234,6 +271,10 @@ export async function scrapePlatform(
         }
       }
       return allResults;
+      
+    case 'stackoverflow':
+    case 'stack overflow':
+      return scrapeStackOverflow(query);
       
     case 'producthunt':
     case 'product hunt':

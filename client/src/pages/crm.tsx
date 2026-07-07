@@ -13,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Users, Settings, X, Crown, Zap, Star } from "lucide-react";
+import { Plus, Users, Settings, X, Crown, Zap, Star, UserPlus, Mail } from "lucide-react";
 
 interface DBUser {
   id: string;
@@ -65,6 +65,9 @@ export default function CRM() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [selectedUser, setSelectedUser] = useState<DBUser | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAddUserOpen, setIsAddUserOpen] = useState(false);
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserTier, setNewUserTier] = useState<string>('starter');
   const [userFeatures, setUserFeatures] = useState<UserFeatures>(allOff);
   const [enableAll, setEnableAll] = useState(false);
   const [selectedTier, setSelectedTier] = useState<string>('starter');
@@ -150,6 +153,10 @@ export default function CRM() {
               <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
               <p className="text-gray-600 mt-1">Manage users and their subscription tiers.</p>
             </div>
+            <Button onClick={() => { setNewUserEmail(''); setNewUserTier('starter'); setIsAddUserOpen(true); }} className="flex items-center gap-2">
+              <UserPlus className="w-4 h-4" />
+              Add User
+            </Button>
           </div>
         </header>
 
@@ -382,6 +389,80 @@ export default function CRM() {
                 setIsModalOpen(false);
               }}>
                 Save Feature Settings
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add User Dialog */}
+      <Dialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="flex items-center gap-2">
+                <UserPlus className="w-5 h-5" />
+                Add New User
+              </DialogTitle>
+              <Button variant="ghost" size="sm" onClick={() => setIsAddUserOpen(false)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <p className="text-sm text-gray-500">
+              Users are created automatically when they sign in via Replit OAuth. You can pre-configure a tier here by email once they've signed up.
+            </p>
+            <div className="space-y-2">
+              <Label>Email Address</Label>
+              <input
+                type="email"
+                className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                placeholder="user@example.com"
+                value={newUserEmail}
+                onChange={e => setNewUserEmail(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Assign Tier</Label>
+              <Select value={newUserTier} onValueChange={setNewUserTier}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="starter">
+                    <span className="flex items-center gap-2"><Zap className="w-4 h-4" /> Starter (Free)</span>
+                  </SelectItem>
+                  <SelectItem value="professional">
+                    <span className="flex items-center gap-2"><Star className="w-4 h-4" /> Professional ($29/mo)</span>
+                  </SelectItem>
+                  <SelectItem value="enterprise">
+                    <span className="flex items-center gap-2"><Crown className="w-4 h-4" /> Enterprise ($99/mo)</span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="p-3 bg-blue-50 rounded-lg text-sm text-blue-700 flex gap-2">
+              <Mail className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <span>To find a user, have them sign into IdeaFlow first. They'll appear in the Users table and you can manage their tier from there.</span>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setIsAddUserOpen(false)}>Cancel</Button>
+              <Button
+                disabled={!newUserEmail}
+                onClick={() => {
+                  const match = users.find(u => u.email?.toLowerCase() === newUserEmail.toLowerCase());
+                  if (match) {
+                    setSelectedUser(match);
+                    setSelectedTier(newUserTier);
+                    setIsAddUserOpen(false);
+                    changeTierMutation.mutate({ userId: match.id, tier: newUserTier });
+                  } else {
+                    toast({ title: "User not found", description: "No user with that email has signed in yet.", variant: "destructive" });
+                  }
+                }}
+              >
+                Apply Tier
               </Button>
             </div>
           </div>

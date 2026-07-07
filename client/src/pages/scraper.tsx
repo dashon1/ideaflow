@@ -25,6 +25,7 @@ import {
   TrendingUp
 } from "lucide-react";
 import { ALL_PLATFORMS, PLATFORM_CATEGORIES, getPlatformsByTier } from "@/data/platforms";
+import Sidebar from "@/components/sidebar";
 
 interface ScrapingJob {
   id: string;
@@ -169,7 +170,9 @@ export default function Scraper() {
   const recentJobs = typedScrapingJobs.slice(0, 3);
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="flex h-screen bg-gray-50">
+      <Sidebar />
+      <div className="flex-1 overflow-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Web Scraper</h1>
@@ -447,6 +450,7 @@ export default function Scraper() {
             )}
           </CardContent>
         </Card>
+      </div>
       </div>
     </div>
   );
