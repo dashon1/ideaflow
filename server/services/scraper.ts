@@ -164,6 +164,177 @@ export async function scrapeReddit(subreddit: string, query: string): Promise<In
   }
 }
 
+export async function scrapeTwitter(query: string): Promise<InsertPainPoint[]> {
+  const token = process.env.TWITTER_BEARER_TOKEN;
+  if (!token) {
+    console.log('[Twitter/X] No TWITTER_BEARER_TOKEN set — skipping');
+    return [];
+  }
+  try {
+    const url = `https://api.twitter.com/2/tweets/search/recent?query=${encodeURIComponent(query + ' -is:retweet lang:en')}&max_results=100&tweet.fields=created_at,public_metrics,text`;
+    console.log(`[Twitter/X] Fetching recent tweets...`);
+    const response = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!response.ok) {
+      console.error(`[Twitter/X] API error: ${response.status} ${await response.text()}`);
+      return [];
+    }
+    const data = await response.json();
+    const tweets = data.data || [];
+    console.log(`[Twitter/X] Got ${tweets.length} results`);
+    return tweets
+      .filter((t: any) => t.text && (t.public_metrics?.like_count || 0) > 2)
+      .map((t: any) => ({
+        platform: 'Twitter/X',
+        sourceLink: `https://twitter.com/i/web/status/${t.id}`,
+        title: t.text.substring(0, 200),
+        fullText: t.text.substring(0, 2000),
+        engagementScore: (t.public_metrics?.like_count || 0) + (t.public_metrics?.retweet_count || 0) + (t.public_metrics?.reply_count || 0),
+        detectedNiche: detectNiche(t.text),
+        problemType: detectProblemType(t.text),
+        mode: 'Discovery',
+        status: 'pending',
+        uniqueHash: generateHash(t.id, 'Twitter'),
+      }));
+  } catch (error) {
+    console.error('[Twitter/X] Scraping error:', error);
+    return [];
+  }
+}
+
+export async function scrapeYouTube(query: string): Promise<InsertPainPoint[]> {
+  const apiKey = process.env.YOUTUBE_API_KEY;
+  if (!apiKey) {
+    console.log('[YouTube] No YOUTUBE_API_KEY set — skipping');
+    return [];
+  }
+  try {
+    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=25&order=relevance&key=${apiKey}`;
+    console.log(`[YouTube] Searching videos...`);
+    const response = await fetch(url);
+    if (!response.ok) {
+      console.error(`[YouTube] API error: ${response.status} ${await response.text()}`);
+      return [];
+    }
+    const data = await response.json();
+    const items = data.items || [];
+    console.log(`[YouTube] Got ${items.length} results`);
+    return items
+      .filter((v: any) => v.snippet?.title)
+      .map((v: any) => ({
+        platform: 'YouTube',
+        sourceLink: `https://www.youtube.com/watch?v=${v.id?.videoId}`,
+        title: v.snippet.title.substring(0, 200),
+        fullText: `${v.snippet.title}. ${v.snippet.description || ''}`.substring(0, 2000),
+        engagementScore: 0,
+        detectedNiche: detectNiche(v.snippet.title + ' ' + (v.snippet.description || '')),
+        problemType: detectProblemType(v.snippet.title + ' ' + (v.snippet.description || '')),
+        mode: 'Discovery',
+        status: 'pending',
+        uniqueHash: generateHash(v.id?.videoId || v.snippet.title, 'YouTube'),
+      }));
+  } catch (error) {
+    console.error('[YouTube] Scraping error:', error);
+    return [];
+  }
+}
+
+export async function scrapeTikTok(query: string): Promise<InsertPainPoint[]> {
+  const token = process.env.TIKTOK_CLIENT_TOKEN;
+  if (!token) {
+    console.log('[TikTok] No TIKTOK_CLIENT_TOKEN set — skipping');
+    return [];
+  }
+  try {
+    const url = 'https://open.tiktokapis.com/v2/research/video/query/';
+    console.log(`[TikTok] Searching videos...`);
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        query: { and: [{ operation: 'IN', field_name: 'keyword', field_values: [query] }] },
+        start_date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10).replace(/-/g, ''),
+        end_date: new Date().toISOString().slice(0, 10).replace(/-/g, ''),
+        max_count: 20,
+        fields: 'id,video_description,like_count,comment_count,share_count,view_count',
+      }),
+    });
+    if (!response.ok) {
+      console.error(`[TikTok] API error: ${response.status} ${await response.text()}`);
+      return [];
+    }
+    const data = await response.json();
+    const videos = data.data?.videos || [];
+    console.log(`[TikTok] Got ${videos.length} results`);
+    return videos
+      .filter((v: any) => v.video_description)
+      .map((v: any) => ({
+        platform: 'TikTok',
+        sourceLink: `https://www.tiktok.com/video/${v.id}`,
+        title: (v.video_description || '').substring(0, 200),
+        fullText: (v.video_description || '').substring(0, 2000),
+        engagementScore: (v.like_count || 0) + (v.comment_count || 0) + (v.share_count || 0),
+        detectedNiche: detectNiche(v.video_description || ''),
+        problemType: detectProblemType(v.video_description || ''),
+        mode: 'Discovery',
+        status: 'pending',
+        uniqueHash: generateHash(v.id || v.video_description, 'TikTok'),
+      }));
+  } catch (error) {
+    console.error('[TikTok] Scraping error:', error);
+    return [];
+  }
+}
+
+export async function scrapeLinkedIn(query: string): Promise<InsertPainPoint[]> {
+  const token = process.env.LINKEDIN_ACCESS_TOKEN;
+  if (!token) {
+    console.log('[LinkedIn] No LINKEDIN_ACCESS_TOKEN set — skipping');
+    return [];
+  }
+  try {
+    const url = `https://api.linkedin.com/v2/search?q=content&keywords=${encodeURIComponent(query)}&count=25`;
+    console.log(`[LinkedIn] Searching posts...`);
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'X-Restli-Protocol-Version': '2.0.0',
+      }
+    });
+    if (!response.ok) {
+      console.error(`[LinkedIn] API error: ${response.status} ${await response.text()}`);
+      return [];
+    }
+    const data = await response.json();
+    const elements = data.elements || [];
+    console.log(`[LinkedIn] Got ${elements.length} results`);
+    return elements
+      .filter((e: any) => e.commentary || e.specificContent)
+      .map((e: any) => {
+        const text = e.commentary || e.specificContent?.['com.linkedin.ugc.ShareContent']?.shareCommentary?.text || '';
+        return {
+          platform: 'LinkedIn',
+          sourceLink: `https://www.linkedin.com/feed/update/${e.id}`,
+          title: text.substring(0, 200),
+          fullText: text.substring(0, 2000),
+          engagementScore: (e.socialDetail?.totalSocialActivityCounts?.numLikes || 0) + (e.socialDetail?.totalSocialActivityCounts?.numComments || 0),
+          detectedNiche: detectNiche(text),
+          problemType: detectProblemType(text),
+          mode: 'Discovery',
+          status: 'pending',
+          uniqueHash: generateHash(e.id || text, 'LinkedIn'),
+        };
+      });
+  } catch (error) {
+    console.error('[LinkedIn] Scraping error:', error);
+    return [];
+  }
+}
+
 export async function scrapeStackOverflow(query: string): Promise<InsertPainPoint[]> {
   try {
     const url = `https://api.stackexchange.com/2.3/search/advanced?order=desc&sort=votes&q=${encodeURIComponent(query)}&site=stackoverflow&pagesize=25&filter=default`;
@@ -275,7 +446,20 @@ export async function scrapePlatform(
     case 'stackoverflow':
     case 'stack overflow':
       return scrapeStackOverflow(query);
-      
+
+    case 'twitter':
+    case 'twitter/x':
+      return scrapeTwitter(query);
+
+    case 'youtube':
+      return scrapeYouTube(query);
+
+    case 'tiktok':
+      return scrapeTikTok(query);
+
+    case 'linkedin':
+      return scrapeLinkedIn(query);
+
     case 'producthunt':
     case 'product hunt':
       return scrapeProductHunt();

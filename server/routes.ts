@@ -958,6 +958,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Platform API keys — GET returns which keys are configured (not the values)
+  app.get("/api/platform-keys", async (req: any, res) => {
+    const userId = getUserId(req);
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+    res.json({
+      TWITTER_BEARER_TOKEN: !!process.env.TWITTER_BEARER_TOKEN,
+      YOUTUBE_API_KEY: !!process.env.YOUTUBE_API_KEY,
+      TIKTOK_CLIENT_TOKEN: !!process.env.TIKTOK_CLIENT_TOKEN,
+      LINKEDIN_ACCESS_TOKEN: !!process.env.LINKEDIN_ACCESS_TOKEN,
+      REDDIT_CLIENT_ID: !!process.env.REDDIT_CLIENT_ID,
+    });
+  });
+
+  // Platform API keys — POST saves to process.env (runtime only; user must also add to Secrets for persistence)
+  app.post("/api/platform-keys", async (req: any, res) => {
+    const userId = getUserId(req);
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+    const allowed = ['TWITTER_BEARER_TOKEN', 'YOUTUBE_API_KEY', 'TIKTOK_CLIENT_TOKEN', 'LINKEDIN_ACCESS_TOKEN', 'REDDIT_CLIENT_ID'];
+    const updated: string[] = [];
+    for (const key of allowed) {
+      if (req.body[key] !== undefined && req.body[key] !== '') {
+        process.env[key] = req.body[key];
+        updated.push(key);
+      }
+    }
+    res.json({ message: `Updated ${updated.length} key(s)`, updated });
+  });
+
   // Admin: list all users
   app.get("/api/admin/users", async (req: any, res) => {
     try {
