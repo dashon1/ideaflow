@@ -969,6 +969,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin: list all users
+  app.get("/api/admin/users", async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      if (!userId) return res.status(401).json({ message: "Unauthorized" });
+      const allUsers = await storage.getAllUsers();
+      res.json(allUsers);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  // Admin: change any user's subscription tier
+  app.patch("/api/admin/users/:userId/tier", async (req: any, res) => {
+    try {
+      const adminId = getUserId(req);
+      if (!adminId) return res.status(401).json({ message: "Unauthorized" });
+
+      const { userId } = req.params;
+      const { tier } = req.body;
+
+      if (!['starter', 'professional', 'enterprise'].includes(tier)) {
+        return res.status(400).json({ message: "Invalid tier. Must be starter, professional, or enterprise." });
+      }
+
+      const tierConfigs = {
+        starter:      { apiQuota: 100,  maxJobsPerDay: 3,  platforms: ['reddit', 'hackernews', 'github', 'producthunt', 'quora', 'tiktok', 'indiehackers'] },
+        professional: { apiQuota: 500,  maxJobsPerDay: 10, platforms: ['reddit', 'hackernews', 'github', 'producthunt', 'quora', 'tiktok', 'indiehackers', 'linkedin', 'twitter', 'facebook', 'facebookgroups', 'instagram', 'youtube', 'glassdoor', 'indeed', 'amazon', 'googleplay', 'appstore', 'trustpilot', 'g2', 'capterra', 'yelp', 'bbb', 'etsy', 'stackoverflow', 'stackexchange', 'devto', 'medium'] },
+        enterprise:   { apiQuota: -1,   maxJobsPerDay: -1, platforms: [] }, // all platforms
+      };
+
+      const target = await storage.getUser(userId);
+      if (!target) return res.status(404).json({ message: "User not found" });
+
+      await storage.updateUser(userId, { subscriptionTier: tier });
+
+      const updated = await storage.getUser(userId);
+      res.json(updated);
+    } catch (error) {
+      console.error("Error changing user tier:", error);
+      res.status(500).json({ message: "Failed to change user tier" });
+    }
+  });
+
   // Sample data regeneration route
   app.post("/api/admin/regenerate-sample-data", async (req: any, res) => {
     try {
