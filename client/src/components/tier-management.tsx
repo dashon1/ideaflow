@@ -10,7 +10,7 @@ import { TIER_LIMITS, ALL_PLATFORMS } from "@/data/platforms";
 
 interface User {
   id: string;
-  subscriptionTier: 'standard' | 'pro' | 'elite';
+  subscriptionTier: 'starter' | 'professional' | 'enterprise';
   subscriptionStatus: string;
   apiQuotaUsed: number;
   apiQuotaLimit: number;
@@ -26,7 +26,7 @@ export default function TierManagement() {
   });
 
   const upgradeUserMutation = useMutation({
-    mutationFn: async (newTier: 'standard' | 'pro' | 'elite') => {
+    mutationFn: async (newTier: 'starter' | 'professional' | 'enterprise') => {
       return apiRequest('/api/users/upgrade-tier', 'PATCH', { tier: newTier });
     },
     onSuccess: (_, newTier) => {
@@ -49,41 +49,41 @@ export default function TierManagement() {
     return <div className="animate-pulse bg-gray-200 h-96 rounded-lg"></div>;
   }
 
-  const currentTier = user?.subscriptionTier || 'standard';
+  const currentTier = user?.subscriptionTier || 'starter';
   const tierLimits = TIER_LIMITS[currentTier];
   const quotaPercentage = user?.apiQuotaLimit === -1 ? 0 : 
     Math.round((user?.apiQuotaUsed || 0) / (user?.apiQuotaLimit || 1) * 100);
 
   const tiers = [
     {
-      name: 'Standard',
-      id: 'standard' as const,
+      name: 'Starter',
+      id: 'starter' as const,
       price: 'Free',
       icon: <Zap className="w-6 h-6" />,
       color: 'blue',
-      features: TIER_LIMITS.standard.features,
-      platformCount: TIER_LIMITS.standard.platforms.length,
-      quota: TIER_LIMITS.standard.apiQuota,
-      dailyJobs: TIER_LIMITS.standard.maxJobsPerDay
+      features: TIER_LIMITS.starter.features,
+      platformCount: TIER_LIMITS.starter.platforms.length,
+      quota: TIER_LIMITS.starter.apiQuota,
+      dailyJobs: TIER_LIMITS.starter.maxJobsPerDay
     },
     {
-      name: 'Pro',
-      id: 'pro' as const,
+      name: 'Professional',
+      id: 'professional' as const,
       price: '$29/month',
       icon: <Star className="w-6 h-6" />,
       color: 'purple',
-      features: TIER_LIMITS.pro.features,
-      platformCount: TIER_LIMITS.pro.platforms.length,
-      quota: TIER_LIMITS.pro.apiQuota,
-      dailyJobs: TIER_LIMITS.pro.maxJobsPerDay
+      features: TIER_LIMITS.professional.features,
+      platformCount: TIER_LIMITS.professional.platforms.length,
+      quota: TIER_LIMITS.professional.apiQuota,
+      dailyJobs: TIER_LIMITS.professional.maxJobsPerDay
     },
     {
-      name: 'Elite',
-      id: 'elite' as const,
+      name: 'Enterprise',
+      id: 'enterprise' as const,
       price: '$99/month',
       icon: <Crown className="w-6 h-6" />,
       color: 'gold',
-      features: TIER_LIMITS.elite.features,
+      features: TIER_LIMITS.enterprise.features,
       platformCount: ALL_PLATFORMS.length,
       quota: 'Unlimited',
       dailyJobs: 'Unlimited'
@@ -139,7 +139,7 @@ export default function TierManagement() {
         {tiers.map((tier) => {
           const isCurrentTier = tier.id === currentTier;
           const canUpgrade = tier.id !== currentTier && 
-            (currentTier === 'standard' || (currentTier === 'pro' && tier.id === 'elite'));
+            (currentTier === 'starter' || (currentTier === 'professional' && tier.id === 'enterprise'));
 
           return (
             <Card key={tier.id} className={`relative ${isCurrentTier ? 'ring-2 ring-blue-500' : ''}`}>
@@ -202,7 +202,7 @@ export default function TierManagement() {
                     </Button>
                   ) : (
                     <Button disabled variant="outline" className="w-full">
-                      {tier.id === 'standard' ? 'Downgrade to Standard' : 'Contact Sales'}
+                      {tier.id === 'starter' ? 'Downgrade to Starter' : 'Contact Sales'}
                     </Button>
                   )}
                 </div>
