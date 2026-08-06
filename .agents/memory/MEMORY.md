@@ -1,0 +1,2 @@
+- [Auth & admin pattern](auth-admin-pattern.md) — requireAuth/requireAdmin middleware in routes.ts; admin gated by ADMIN_USER_IDS env var (comma-separated user IDs).
+- [Credits flow](credits-flow.md) — credits must only be added via Stripe webhook; direct /api/credits/purchase endpoint is disabled (410).

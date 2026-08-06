@@ -21,6 +21,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return null;
   };
 
+  // Middleware: require a valid session
+  const requireAuth = (req: any, res: any, next: any) => {
+    const userId = getUserId(req);
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+    next();
+  };
+
+  // Middleware: require admin role
+  // Set ADMIN_USER_IDS env var to a comma-separated list of Replit user IDs.
+  const requireAdmin = (req: any, res: any, next: any) => {
+    const userId = getUserId(req);
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+    const adminIds = (process.env.ADMIN_USER_IDS || "").split(",").map(s => s.trim()).filter(Boolean);
+    if (adminIds.length === 0 || !adminIds.includes(userId)) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    next();
+  };
+
   // Auth routes - returns authenticated user with credit information
   app.get('/api/auth/user', async (req: any, res) => {
     try {
@@ -59,69 +78,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // User tier upgrade endpoint
-  app.patch("/api/users/upgrade-tier", async (req, res) => {
-    try {
-      const { tier } = req.body;
-      
-      if (!['standard', 'pro', 'elite'].includes(tier)) {
-        return res.status(400).json({ message: "Invalid tier" });
-      }
-
-      // Tier configurations - Give all platforms access for demo purposes
-      const tierConfigs = {
-        standard: { 
-          apiQuota: 100, 
-          platforms: ['reddit', 'tiktok', 'quora', 'producthunt', 'indiehackers', 'linkedin', 'twitter', 'facebook', 'facebookgroups', 'instagram', 'youtube', 'glassdoor', 'indeed', 'amazon', 'googleplay', 'appstore', 'trustpilot', 'g2', 'capterra', 'yelp', 'bbb', 'etsy', 'github', 'stackoverflow', 'stackexchange', 'devto', 'medium', 'hackernews', 'substack', 'pinterest', 'tumblr', 'discord', 'slack', 'telegram', 'whatsapp', 'twitch', 'kick', 'snapchat', 'blind', 'kickstarter', 'indiegogo', 'mastodon', 'bluesky', 'lemmy', 'kbin', 'superuser', 'askubuntu', 'serverfault', 'clubhouse', 'spaces', 'productboard', 'canny', 'uservoice', 'featureupvote'],
-          maxJobsPerDay: 3
-        },
-        pro: { 
-          apiQuota: 500, 
-          platforms: ['reddit', 'tiktok', 'quora', 'producthunt', 'indiehackers', 'linkedin', 'twitter', 'facebook', 'facebookgroups', 'instagram', 'youtube', 'glassdoor', 'indeed', 'amazon', 'googleplay', 'appstore', 'trustpilot', 'g2', 'capterra', 'yelp', 'bbb', 'etsy', 'github', 'stackoverflow', 'stackexchange', 'devto', 'medium', 'hackernews'],
-          maxJobsPerDay: 10
-        },
-        elite: { 
-          apiQuota: -1, 
-          platforms: ['reddit', 'tiktok', 'quora', 'producthunt', 'indiehackers', 'linkedin', 'twitter', 'facebook', 'facebookgroups', 'instagram', 'youtube', 'glassdoor', 'indeed', 'amazon', 'googleplay', 'appstore', 'trustpilot', 'g2', 'capterra', 'yelp', 'bbb', 'etsy', 'github', 'stackoverflow', 'stackexchange', 'devto', 'medium', 'hackernews', 'substack', 'pinterest', 'tumblr', 'discord', 'slack', 'telegram', 'whatsapp', 'twitch', 'kick', 'snapchat', 'blind', 'kickstarter', 'indiegogo', 'mastodon', 'bluesky', 'lemmy', 'kbin', 'superuser', 'askubuntu', 'serverfault', 'clubhouse', 'spaces', 'productboard', 'canny', 'uservoice', 'featureupvote'],
-          maxJobsPerDay: -1
-        }
-      };
-
-      const config = tierConfigs[tier as keyof typeof tierConfigs];
-      
-      const userId = getUserId(req);
-      if (!userId) {
-        return res.status(401).json({ message: "Unauthorized" });
-      }
-      
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      // Update user subscription tier
-      await storage.updateUser(userId, { subscriptionTier: tier });
-      
-      res.json({
-        id: userId,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        subscriptionTier: tier,
-        subscriptionStatus: 'active',
-        apiQuotaUsed: 0,
-        apiQuotaLimit: config.apiQuota,
-        platformAccess: config.platforms,
-        createdAt: user.createdAt,
-      });
-    } catch (error) {
-      console.error("Error upgrading user tier:", error);
-      res.status(500).json({ message: "Failed to upgrade tier" });
-    }
-  });
+  // Tier changes must go through Stripe checkout — no self-upgrade endpoint.
 
   // Dashboard stats
-  app.get("/api/stats", async (req, res) => {
+  app.get("/api/stats", requireAuth, async (req, res) => {
     try {
       const stats = await storage.getStats();
       res.json(stats);
@@ -132,7 +92,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Pain Points routes
-  app.get("/api/pain-points", async (req, res) => {
+  app.get("/api/pain-points", requireAuth, async (req, res) => {
     try {
       const { platform, status, niche, limit = 50, offset = 0 } = req.query;
       
@@ -151,7 +111,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/pain-points", async (req, res) => {
+  app.post("/api/pain-points", requireAuth, async (req, res) => {
     try {
       const validatedData = insertPainPointSchema.parse(req.body);
       const painPoint = await storage.createPainPoint(validatedData);
@@ -162,7 +122,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/pain-points/:id/approve", async (req, res) => {
+  app.patch("/api/pain-points/:id/approve", requireAuth, async (req, res) => {
     try {
       const { id } = req.params;
       await storage.updatePainPointStatus(id, "approved");
@@ -201,7 +161,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Ideas routes
-  app.get("/api/ideas", async (req, res) => {
+  app.get("/api/ideas", requireAuth, async (req, res) => {
     try {
       const { status, domain, limit = 50, offset = 0 } = req.query;
       
@@ -219,7 +179,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/ideas", async (req, res) => {
+  app.post("/api/ideas", requireAuth, async (req, res) => {
     try {
       const validatedData = insertIdeaSchema.parse(req.body);
       const idea = await storage.createIdea(validatedData);
@@ -230,7 +190,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/ideas/:id/approve", async (req, res) => {
+  app.patch("/api/ideas/:id/approve", requireAuth, async (req, res) => {
     try {
       const { id } = req.params;
       await storage.updateIdeaStatus(id, "approved");
@@ -242,7 +202,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Content routes
-  app.get("/api/content", async (req, res) => {
+  app.get("/api/content", requireAuth, async (req, res) => {
     try {
       const { mvpId } = req.query;
       
@@ -261,7 +221,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/content", async (req, res) => {
+  app.post("/api/content", requireAuth, async (req, res) => {
     try {
       const { mvpId, contentType, scriptText, metadata } = req.body;
       
@@ -285,7 +245,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // MVP routes
-  app.get("/api/mvps", async (req, res) => {
+  app.get("/api/mvps", requireAuth, async (req, res) => {
     try {
       const { limit = 50, offset = 0 } = req.query;
       
@@ -301,7 +261,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/mvps", async (req, res) => {
+  app.post("/api/mvps", requireAuth, async (req, res) => {
     try {
       const validatedData = insertMvpSchema.parse(req.body);
       const mvp = await storage.createMvp(validatedData);
@@ -313,7 +273,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Scraping Jobs routes
-  app.get('/api/scraping-jobs', async (req, res) => {
+  app.get('/api/scraping-jobs', requireAuth, async (req, res) => {
     try {
       const jobs = await storage.getScrapingJobs(10); // Get last 10 jobs
       res.json(jobs);
@@ -543,7 +503,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Pipeline monitoring routes
-  app.get("/api/pipeline/status", async (req, res) => {
+  app.get("/api/pipeline/status", requireAuth, async (req, res) => {
     try {
       // Get recent scraping jobs for pipeline status
       const recentJobs = await storage.getScrapingJobs(5);
@@ -581,7 +541,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Agent management routes
-  app.get("/api/agents", async (req, res) => {
+  app.get("/api/agents", requireAuth, async (req, res) => {
     try {
       const agents = [
         {
@@ -626,71 +586,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/agents/:id", async (req, res) => {
+  app.patch("/api/agents/:id", requireAdmin, async (req: any, res) => {
     try {
       const { id } = req.params;
       const configuration = req.body;
-      
-      // In a real implementation, you'd save this to the database
-      res.json({ 
-        message: `Agent ${id} configuration updated successfully`,
-        configuration 
-      });
+      // Agent configurations are stored as user settings in the DB
+      const userId = getUserId(req);
+      await storage.setSetting({ userId: userId!, settingKey: `agent_config_${id}`, settingValue: JSON.stringify(configuration) });
+      res.json({ message: `Agent ${id} configuration updated successfully`, configuration });
     } catch (error) {
       console.error("Error updating agent configuration:", error);
       res.status(500).json({ message: "Failed to update agent configuration" });
     }
   });
 
-  // User management routes for CRM
-  app.get("/api/users", async (req, res) => {
+  // User management routes for CRM (admin only)
+  app.get("/api/users", requireAdmin, async (req, res) => {
     try {
-      // Mock users for demonstration
-      const users = [
-        {
-          id: "1",
-          name: "Alice Johnson",
-          email: "alice@example.com",
-          plan: "Pro",
-          proFeaturesEnabled: 23,
-          totalProFeatures: 23,
-          features: {
-            geminiPro: true,
-            gpt4: true,
-            claudeOpus: true,
-            midjourney: true,
-            elevenLabs: true,
-            goHighLevel: true
-          }
-        },
-        {
-          id: "2",
-          name: "Bob Williams", 
-          email: "bob@example.com",
-          plan: "Free",
-          proFeaturesEnabled: 0,
-          totalProFeatures: 23,
-          features: {}
-        }
-      ];
-      
-      res.json(users);
+      const allUsers = await storage.getAllUsers();
+      res.json(allUsers);
     } catch (error) {
       console.error("Error fetching users:", error);
       res.status(500).json({ message: "Failed to fetch users" });
     }
   });
 
-  app.patch("/api/users/:id/features", async (req, res) => {
+  app.patch("/api/users/:id/features", requireAdmin, async (req: any, res) => {
     try {
       const { id } = req.params;
       const features = req.body;
-      
-      // In a real implementation, you'd save this to the database
-      res.json({ 
-        message: `User ${id} features updated successfully`,
-        features 
-      });
+      // Store feature overrides as a setting keyed by admin-set user-specific config
+      const adminId = getUserId(req);
+      await storage.setSetting({ userId: id, settingKey: 'feature_overrides', settingValue: JSON.stringify(features) });
+      res.json({ message: `User ${id} features updated successfully`, features });
     } catch (error) {
       console.error("Error updating user features:", error);
       res.status(500).json({ message: "Failed to update user features" });
@@ -737,40 +665,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/credits/purchase", async (req: any, res) => {
-    try {
-      const userId = getUserId(req);
-      if (!userId) {
-        return res.status(401).json({ message: "Unauthorized" });
-      }
-      const { packageId, paymentIntentId } = req.body;
-      
-      const creditPackage = await storage.getCreditPackageById(packageId);
-      if (!creditPackage) {
-        return res.status(404).json({ message: "Credit package not found" });
-      }
-      
-      const totalCredits = creditPackage.credits + (creditPackage.bonusCredits || 0);
-      
-      await storage.addCredits(
-        userId,
-        totalCredits,
-        `Purchased ${creditPackage.name}`,
-        { 
-          packageId, 
-          paymentIntentId,
-          purchasePrice: creditPackage.priceUsd 
-        }
-      );
-      
-      res.json({ 
-        message: "Credits purchased successfully",
-        creditsAdded: totalCredits
-      });
-    } catch (error) {
-      console.error("Error purchasing credits:", error);
-      res.status(500).json({ message: "Failed to purchase credits" });
-    }
+  // Direct credit purchase is disabled — credits are only added by the Stripe webhook
+  // after a verified payment. Use /api/stripe/checkout/credits to initiate a purchase.
+  app.post("/api/credits/purchase", (_req, res) => {
+    res.status(410).json({ message: "Use /api/stripe/checkout/credits to purchase credits." });
   });
 
   app.get("/api/pricing", async (req, res) => {
@@ -882,8 +780,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Global settings routes
-  app.get("/api/global-settings", async (req, res) => {
+  // Global settings routes (admin only)
+  app.get("/api/global-settings", requireAdmin, async (req, res) => {
     try {
       // Mock global settings for demonstration
       const globalSettings = {
@@ -943,15 +841,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/global-settings", async (req, res) => {
+  app.patch("/api/global-settings", requireAdmin, async (req: any, res) => {
     try {
       const settings = req.body;
-      
-      // In a real implementation, you'd save this to the database
-      res.json({ 
-        message: "Global settings updated successfully",
-        settings 
-      });
+      const adminId = getUserId(req);
+      await storage.setSetting({ userId: adminId!, settingKey: 'global_settings', settingValue: JSON.stringify(settings) });
+      res.json({ message: "Global settings updated successfully", settings });
     } catch (error) {
       console.error("Error updating global settings:", error);
       res.status(500).json({ message: "Failed to update global settings" });
@@ -971,10 +866,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Platform API keys — POST saves to process.env (runtime only; user must also add to Secrets for persistence)
-  app.post("/api/platform-keys", async (req: any, res) => {
-    const userId = getUserId(req);
-    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+  // Platform API keys — POST saves to process.env (admin only; add to Replit Secrets for persistence)
+  app.post("/api/platform-keys", requireAdmin, async (req: any, res) => {
     const allowed = ['TWITTER_BEARER_TOKEN', 'YOUTUBE_API_KEY', 'TIKTOK_CLIENT_TOKEN', 'LINKEDIN_ACCESS_TOKEN', 'REDDIT_CLIENT_ID'];
     const updated: string[] = [];
     for (const key of allowed) {
@@ -987,10 +880,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin: list all users
-  app.get("/api/admin/users", async (req: any, res) => {
+  app.get("/api/admin/users", requireAdmin, async (req: any, res) => {
     try {
-      const userId = getUserId(req);
-      if (!userId) return res.status(401).json({ message: "Unauthorized" });
       const allUsers = await storage.getAllUsers();
       res.json(allUsers);
     } catch (error) {
@@ -1000,10 +891,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin: change any user's subscription tier
-  app.patch("/api/admin/users/:userId/tier", async (req: any, res) => {
+  app.patch("/api/admin/users/:userId/tier", requireAdmin, async (req: any, res) => {
     try {
-      const adminId = getUserId(req);
-      if (!adminId) return res.status(401).json({ message: "Unauthorized" });
 
       const { userId } = req.params;
       const { tier } = req.body;
@@ -1031,8 +920,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Sample data regeneration route
-  app.post("/api/admin/regenerate-sample-data", async (req: any, res) => {
+  // Sample data regeneration route (admin only)
+  app.post("/api/admin/regenerate-sample-data", requireAdmin, async (req: any, res) => {
     try {
       const { generateComprehensiveMockData } = await import("./mockDataGenerator");
       const stats = await generateComprehensiveMockData();
