@@ -1,2 +1,5 @@
 - [Auth & admin pattern](auth-admin-pattern.md) — requireAuth/requireAdmin middleware in routes.ts; admin gated by ADMIN_USER_IDS env var (comma-separated user IDs).
-- [Credits flow](credits-flow.md) — credits must only be added via Stripe webhook; direct /api/credits/purchase endpoint is disabled (410).
+- [Credits flow](credits-flow.md) — credits must only be added via Stripe webhook; direct /api/credits/purchase endpoint is disabled (410). deductCredits/addCredits use db.transaction() with SELECT FOR UPDATE.
+- [CSRF protection](csrf-pattern.md) — server/csrf.ts; token generated per session, returned in /api/auth/user as csrfToken; global middleware in index.ts enforces X-CSRF-Token on all mutations; frontend stores token via setCsrfToken() in queryClient.ts, set from useAuth.ts.
+- [Rate limiting](rate-limiting.md) — express-rate-limit: global 300/min in index.ts; scraper 5/min and AI-approve 15/min in rateLimiters.ts applied per-route.
+- [DB constraints](db-constraints.md) — unique index on pain_points.unique_hash; unique constraint on settings(user_id, setting_key); both applied via drizzle-kit push.

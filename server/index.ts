@@ -1,9 +1,22 @@
 import express, { type Request, Response, NextFunction } from "express";
+import rateLimit from "express-rate-limit";
 import { runMigrations } from 'stripe-replit-sync';
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { getStripeSync } from "./stripeClient";
 import { WebhookHandlers } from "./webhookHandlers";
+import { verifyCsrf } from "./csrf";
+
+// ── Global rate limiter ────────────────────────────────────────────────────────
+// 300 requests / min per IP (baseline DoS protection on all API routes)
+const globalLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many requests — please try again shortly." },
+  skip: (req) => req.path === "/api/stripe/webhook",
+});
 
 const app = express();
 
@@ -85,6 +98,18 @@ app.post(
 // Now apply JSON middleware for all other routes
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Apply global rate limiter to all API routes
+app.use("/api", globalLimiter);
+
+// CSRF verification for all state-changing API routes.
+// The Stripe webhook is excluded — it arrives before this middleware
+// and uses signature verification instead.
+app.use("/api", (req: Request, res: Response, next: NextFunction) => {
+  if (["GET", "HEAD", "OPTIONS"].includes(req.method)) return next();
+  if (req.path === "/stripe/webhook") return next(); // already handled above
+  verifyCsrf(req, res, next);
+});
 
 app.use((req, res, next) => {
   const start = Date.now();

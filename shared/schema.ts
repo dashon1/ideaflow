@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
 import {
   index,
+  uniqueIndex,
   jsonb,
   pgTable,
   timestamp,
@@ -9,6 +10,7 @@ import {
   integer,
   decimal,
   boolean,
+  unique,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -61,7 +63,9 @@ export const painPoints = pgTable("pain_points", {
   status: varchar("status").default("pending"), // pending, approved, rejected
   uniqueHash: varchar("unique_hash"), // for deduplication
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  uniqueIndex("pain_points_unique_hash_idx").on(table.uniqueHash),
+]);
 
 // Scraping jobs and pipeline tracking
 export const scrapingJobs = pgTable("scraping_jobs", {
@@ -218,7 +222,9 @@ export const settings = pgTable("settings", {
   settingKey: varchar("setting_key").notNull(),
   settingValue: text("setting_value"),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  unique("settings_user_key_unique").on(table.userId, table.settingKey),
+]);
 
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;

@@ -8,6 +8,8 @@ import { summarizeIdea, classifyIdea } from "./services/openai";
 import { scrapeAllPlatforms } from "./services/scraper";
 import { scrapeMultiplePlatforms } from "./services/platformApi";
 import { calculateJobCost, CREDIT_COSTS, hasplatformAccess, PRICING_TIERS, CREDIT_PACKAGES } from "./services/pricing";
+import { getOrCreateCsrfToken, verifyCsrf } from "./csrf";
+import { scraperLimiter, aiLimiter } from "./rateLimiters";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Enable Replit authentication
@@ -58,6 +60,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { PLATFORM_ACCESS } = await import('./services/pricing');
       const tierPlatforms = PLATFORM_ACCESS[user.subscriptionTier as keyof typeof PLATFORM_ACCESS] || PLATFORM_ACCESS.starter;
       
+      // Ensure a CSRF token exists in the session and return it to the client
+      const csrfToken = getOrCreateCsrfToken(req);
+
       res.json({
         id: user.id,
         email: user.email,
@@ -71,6 +76,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         monthlyCreditsIncluded: credits.monthlyIncluded,
         platformAccess: tierPlatforms,
         createdAt: user.createdAt,
+        csrfToken,
       });
     } catch (error) {
       console.error('Error fetching user:', error);
@@ -122,7 +128,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/pain-points/:id/approve", requireAuth, async (req, res) => {
+  app.patch("/api/pain-points/:id/approve", requireAuth, aiLimiter, async (req, res) => {
     try {
       const { id } = req.params;
       await storage.updatePainPointStatus(id, "approved");
@@ -283,7 +289,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/scraper/start', async (req, res) => {
+  app.post('/api/scraper/start', scraperLimiter, async (req, res) => {
     try {
       const { jobType, platforms, targetNiche } = req.body;
       const userId = getUserId(req);

@@ -28,7 +28,7 @@ import {
   type InsertCreditPackage,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, like, inArray } from "drizzle-orm";
+import { eq, desc, and, like, inArray, sql as drizzleSql } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -342,51 +342,61 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deductCredits(userId: string, amount: number, description: string, jobId?: string): Promise<boolean> {
-    const [user] = await db.select().from(users).where(eq(users.id, userId));
-    if (!user) {
-      throw new Error("User not found");
-    }
+    // Use a transaction with a row-level lock to prevent double-spend races.
+    return await db.transaction(async (tx) => {
+      // Lock the user row for the duration of this transaction
+      const [user] = await tx.execute(
+        drizzleSql`SELECT credits_balance, credits_used FROM users WHERE id = ${userId} FOR UPDATE`
+      ) as any;
 
-    if (user.creditsBalance < amount) {
-      return false; // Insufficient credits
-    }
+      if (!user) throw new Error("User not found");
 
-    // Deduct credits and record transaction
-    await db.update(users)
-      .set({ 
-        creditsBalance: user.creditsBalance - amount,
-        creditsUsed: (user.creditsUsed || 0) + amount 
-      })
-      .where(eq(users.id, userId));
+      const balance = Number(user.credits_balance ?? 0);
+      const used = Number(user.credits_used ?? 0);
 
-    await db.insert(creditTransactions).values({
-      userId,
-      type: "usage",
-      amount: -amount, // Negative for usage
-      description,
-      relatedJobId: jobId,
+      if (balance < amount) return false;
+
+      await tx.update(users)
+        .set({
+          creditsBalance: balance - amount,
+          creditsUsed: used + amount,
+        })
+        .where(eq(users.id, userId));
+
+      await tx.insert(creditTransactions).values({
+        userId,
+        type: "usage",
+        amount: -amount,
+        description,
+        relatedJobId: jobId,
+      });
+
+      return true;
     });
-
-    return true;
   }
 
   async addCredits(userId: string, amount: number, description: string, metadata?: any): Promise<void> {
-    const [user] = await db.select().from(users).where(eq(users.id, userId));
-    if (!user) {
-      throw new Error("User not found");
-    }
+    // Use a transaction with a row-level lock to prevent race conditions.
+    await db.transaction(async (tx) => {
+      const [user] = await tx.execute(
+        drizzleSql`SELECT credits_balance FROM users WHERE id = ${userId} FOR UPDATE`
+      ) as any;
 
-    // Add credits and record transaction
-    await db.update(users)
-      .set({ creditsBalance: user.creditsBalance + amount })
-      .where(eq(users.id, userId));
+      if (!user) throw new Error("User not found");
 
-    await db.insert(creditTransactions).values({
-      userId,
-      type: "purchase",
-      amount, // Positive for addition
-      description,
-      metadata,
+      const balance = Number(user.credits_balance ?? 0);
+
+      await tx.update(users)
+        .set({ creditsBalance: balance + amount })
+        .where(eq(users.id, userId));
+
+      await tx.insert(creditTransactions).values({
+        userId,
+        type: "purchase",
+        amount,
+        description,
+        metadata,
+      });
     });
   }
 
