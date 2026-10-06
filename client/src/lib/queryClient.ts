@@ -5,7 +5,7 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 // Attached as X-CSRF-Token on every state-changing request.
 let _csrfToken: string | null = null;
 
-export function setCsrfToken(token: string) {
+export function setCsrfToken(token: string | null) {
   _csrfToken = token;
 }
 
@@ -29,6 +29,13 @@ export async function apiRequest(
   if (data) headers["Content-Type"] = "application/json";
 
   // Attach CSRF token to all state-changing requests
+  if (!isReadOnly && !_csrfToken) {
+    const authResponse = await fetch("/api/auth/user", { credentials: "include", cache: "no-store" });
+    await throwIfResNotOk(authResponse);
+    const user = await authResponse.json();
+    setCsrfToken(user?.csrfToken ?? null);
+    if (!_csrfToken) throw new Error("Please sign in before making changes.");
+  }
   if (!isReadOnly && _csrfToken) {
     headers["X-CSRF-Token"] = _csrfToken;
   }
@@ -50,7 +57,17 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey.join("/") as string, {
+    const [path, filters] = queryKey;
+    const params = new URLSearchParams();
+    if (filters && typeof filters === "object") {
+      for (const [key, value] of Object.entries(filters)) {
+        if (value !== undefined && value !== null && value !== "") params.set(key, String(value));
+      }
+    }
+    const url = typeof filters === "object"
+      ? `${path}${params.size ? `?${params}` : ""}`
+      : queryKey.join("/");
+    const res = await fetch(url, {
       credentials: "include",
     });
 
@@ -59,7 +76,9 @@ export const getQueryFn: <T>(options: {
     }
 
     await throwIfResNotOk(res);
-    return await res.json();
+    const result = await res.json();
+    if (path === "/api/auth/user") setCsrfToken(result?.csrfToken ?? null);
+    return result;
   };
 
 export const queryClient = new QueryClient({

@@ -3,3 +3,4 @@
 - [CSRF protection](csrf-pattern.md) — server/csrf.ts; token generated per session, returned in /api/auth/user as csrfToken; global middleware in index.ts enforces X-CSRF-Token on all mutations; frontend stores token via setCsrfToken() in queryClient.ts, set from useAuth.ts.
 - [Rate limiting](rate-limiting.md) — express-rate-limit: global 300/min in index.ts; scraper 5/min and AI-approve 15/min in rateLimiters.ts applied per-route.
 - [DB constraints](db-constraints.md) — unique index on pain_points.unique_hash; unique constraint on settings(user_id, setting_key); both applied via drizzle-kit push.
+- [Database driver results](database-driver-results.md) — raw result formats vary; verify credit changes against the real driver, not just compilation.

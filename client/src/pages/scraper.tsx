@@ -271,7 +271,7 @@ export default function Scraper() {
               <div className="flex items-center space-x-2">
                 <Checkbox 
                   checked={showAllPlatforms}
-                  onCheckedChange={setShowAllPlatforms}
+                  onCheckedChange={(checked) => setShowAllPlatforms(checked === true)}
                 />
                 <Label className="text-sm">Show all platforms at once</Label>
               </div>

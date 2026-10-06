@@ -28,7 +28,7 @@ import {
   type InsertCreditPackage,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, like, inArray, sql as drizzleSql } from "drizzle-orm";
+import { eq, desc, and, like, inArray } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -70,6 +70,7 @@ export interface IStorage {
   // Content operations
   createContent(content: InsertContent): Promise<Content>;
   getContentByMvpId(mvpId: string): Promise<Content[]>;
+  getAllContent(): Promise<Content[]>;
 
   // Settings operations
   getSetting(userId: string, key: string): Promise<Setting | undefined>;
@@ -97,6 +98,9 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  async getAllContent(): Promise<Content[]> {
+    return db.select().from(content).orderBy(desc(content.createdAt));
+  }
   // User operations (IMPORTANT: mandatory for Replit Auth)
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
@@ -136,16 +140,17 @@ export class DatabaseStorage implements IStorage {
     offset?: number;
   }): Promise<PainPoint[]> {
     let query = db.select().from(painPoints);
-
+    const conditions = [];
     if (filters?.platform) {
-      query = query.where(eq(painPoints.platform, filters.platform)) as any;
+      conditions.push(eq(painPoints.platform, filters.platform));
     }
     if (filters?.status) {
-      query = query.where(eq(painPoints.status, filters.status)) as any;
+      conditions.push(eq(painPoints.status, filters.status));
     }
     if (filters?.niche) {
-      query = query.where(like(painPoints.detectedNiche, `%${filters.niche}%`)) as any;
+      conditions.push(like(painPoints.detectedNiche, `%${filters.niche}%`));
     }
+    if (conditions.length) query = query.where(and(...conditions)) as any;
 
     query = query.orderBy(desc(painPoints.createdAt)) as any;
 
@@ -342,17 +347,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deductCredits(userId: string, amount: number, description: string, jobId?: string): Promise<boolean> {
+    if (!Number.isSafeInteger(amount) || amount <= 0) throw new Error("Credit amount must be a positive integer");
     // Use a transaction with a row-level lock to prevent double-spend races.
     return await db.transaction(async (tx) => {
       // Lock the user row for the duration of this transaction
-      const [user] = await tx.execute(
-        drizzleSql`SELECT credits_balance, credits_used FROM users WHERE id = ${userId} FOR UPDATE`
-      ) as any;
+      const [user] = await tx.select().from(users).where(eq(users.id, userId)).for("update");
 
       if (!user) throw new Error("User not found");
 
-      const balance = Number(user.credits_balance ?? 0);
-      const used = Number(user.credits_used ?? 0);
+      const balance = user.creditsBalance;
+      const used = user.creditsUsed;
 
       if (balance < amount) return false;
 
@@ -376,15 +380,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async addCredits(userId: string, amount: number, description: string, metadata?: any): Promise<void> {
+    if (!Number.isSafeInteger(amount) || amount <= 0) throw new Error("Credit amount must be a positive integer");
     // Use a transaction with a row-level lock to prevent race conditions.
     await db.transaction(async (tx) => {
-      const [user] = await tx.execute(
-        drizzleSql`SELECT credits_balance FROM users WHERE id = ${userId} FOR UPDATE`
-      ) as any;
+      const [user] = await tx.select().from(users).where(eq(users.id, userId)).for("update");
 
       if (!user) throw new Error("User not found");
 
-      const balance = Number(user.credits_balance ?? 0);
+      const balance = user.creditsBalance;
 
       await tx.update(users)
         .set({ creditsBalance: balance + amount })

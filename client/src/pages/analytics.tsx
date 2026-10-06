@@ -3,17 +3,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { BarChart3, TrendingUp, Users, Target, RefreshCw } from "lucide-react";
 import Sidebar from "@/components/sidebar";
+import type { Mvp, Content } from "@shared/schema";
 
 export default function Analytics() {
   const { data: stats = {}, refetch } = useQuery({
     queryKey: ['/api/stats'],
   });
 
-  const { data: mvps = [] } = useQuery({
+  const { data: mvps = [] } = useQuery<Mvp[]>({
     queryKey: ['/api/mvps'],
   });
 
-  const { data: content = [] } = useQuery({
+  const { data: content = [] } = useQuery<Content[]>({
     queryKey: ['/api/content'],
   });
 
@@ -21,7 +22,7 @@ export default function Analytics() {
   const conversionRate = mvps.length > 0
     ? (mvps.filter((mvp: any) => mvp.status === 'deployed').length / mvps.length * 100).toFixed(1)
     : 0;
-  const activeContent = content.filter((c: any) => c.status === 'published').length;
+  const activeContent = content.filter(c => c.isReadyForDistribution).length;
 
   return (
     <div className="flex h-screen bg-gray-50">

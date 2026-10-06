@@ -24,15 +24,21 @@ export default function TierManagement() {
   const { data: user, isLoading } = useQuery<User>({
     queryKey: ['/api/auth/user'],
   });
+  const { data: pricing } = useQuery<{ tiers: { id: string; monthlyPrice: number }[] }>({
+    queryKey: ["/api/pricing"],
+  });
 
   const upgradeUserMutation = useMutation({
     mutationFn: async (newTier: 'starter' | 'professional' | 'enterprise') => {
-      return apiRequest('/api/users/upgrade-tier', 'PATCH', { tier: newTier });
+      const response = await apiRequest('/api/stripe/checkout/subscription', 'POST', { tierId: newTier });
+      const checkout = await response.json();
+      if (!checkout.url) throw new Error("Checkout did not return a payment URL");
+      window.location.assign(checkout.url);
     },
     onSuccess: (_, newTier) => {
       toast({
-        title: `Upgraded to ${newTier.charAt(0).toUpperCase() + newTier.slice(1)}!`,
-        description: `You now have access to ${newTier} tier features.`,
+        title: "Continue to checkout",
+        description: "Your plan changes only after payment is confirmed.",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
     },
@@ -58,7 +64,7 @@ export default function TierManagement() {
     {
       name: 'Starter',
       id: 'starter' as const,
-      price: 'Free',
+       price: pricing ? `$${pricing.tiers.find(t => t.id === "starter")?.monthlyPrice}/month` : "Loading price…",
       icon: <Zap className="w-6 h-6" />,
       color: 'blue',
       features: TIER_LIMITS.starter.features,
@@ -69,7 +75,7 @@ export default function TierManagement() {
     {
       name: 'Professional',
       id: 'professional' as const,
-      price: '$29/month',
+       price: pricing ? `$${pricing.tiers.find(t => t.id === "professional")?.monthlyPrice}/month` : "Loading price…",
       icon: <Star className="w-6 h-6" />,
       color: 'purple',
       features: TIER_LIMITS.professional.features,
@@ -80,7 +86,7 @@ export default function TierManagement() {
     {
       name: 'Enterprise',
       id: 'enterprise' as const,
-      price: '$99/month',
+       price: pricing ? `$${pricing.tiers.find(t => t.id === "enterprise")?.monthlyPrice}/month` : "Loading price…",
       icon: <Crown className="w-6 h-6" />,
       color: 'gold',
       features: TIER_LIMITS.enterprise.features,

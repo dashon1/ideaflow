@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import Sidebar from "@/components/sidebar";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -89,11 +91,58 @@ export default function GlobalSettings() {
     });
   };
 
-  const handleSaveChanges = () => {
-    toast({
-      title: "Settings Saved",
-      description: "Global settings have been updated successfully.",
-    });
+  const setters = {
+    adminControls: { enableAllProFeatures: setEnableAllProFeatures },
+    contentAgent: {
+      llm: { geminiPro: setGeminiProLLM, gpt4: setGpt4LLM, claudeOpus: setClaudeOpusLLM },
+      imageGeneration: { midjourney: setMidjourneyImage, stableDiffusion: setStableDiffusionImage, dalle3: setDalle3Image, falAI: setFalAIImage },
+      videoGeneration: { runway: setRunwayVideo, googleVeo3: setGoogleVeo3Video, createomate: setCreateomateVideo, json2Video: setJson2VideoVideo, falAIVideo: setFalAIVideo },
+    },
+    marketingAgent: {
+      audio: { elevenLabs: setElevenLabsAudio, piAPI: setPiAPIAudio, falAIVideo: setFalAIVideoMarketing },
+      marketing: { genspark: setGensparkMarketing, manus: setManusMarketing, minimax: setMinimaxMarketing, aiPlan: setAiPlanMarketing },
+      crm: { goHighLevel: setGoHighLevelCRM, marketingBlocksAI: setMarketingBlocksAICRM, agentXHelp: setAgentXHelpCRM, n8nAutomation: setN8nAutomationCRM },
+    },
+  };
+  const { data: savedSettings, error: loadError } = useQuery<Record<string, any>>({
+    queryKey: ["/api/global-settings"], enabled: isAuthenticated,
+  });
+  useEffect(() => {
+    if (!savedSettings) return;
+    const apply = (mapping: Record<string, any>, values: Record<string, any>) => {
+      for (const [key, setter] of Object.entries(mapping)) {
+        if (typeof setter === "function" && typeof values?.[key] === "boolean") setter(values[key]);
+        else if (typeof setter === "object") apply(setter, values?.[key]);
+      }
+    };
+    apply(setters, savedSettings);
+    if (Array.isArray(savedSettings.tools)) setTools(savedSettings.tools);
+  }, [savedSettings]);
+  useEffect(() => {
+    if (loadError) toast({ title: "Cannot load settings", description: loadError.message, variant: "destructive" });
+  }, [loadError]);
+
+  const [isSaving, setIsSaving] = useState(false);
+  const handleSaveChanges = async () => {
+    setIsSaving(true);
+    try {
+      await apiRequest("/api/global-settings", "PATCH", {
+        adminControls: { enableAllProFeatures },
+        contentAgent: {
+          llm: { geminiPro: geminiProLLM, gpt4: gpt4LLM, claudeOpus: claudeOpusLLM },
+          imageGeneration: { midjourney: midjourneyImage, stableDiffusion: stableDiffusionImage, dalle3: dalle3Image, falAI: falAIImage },
+          videoGeneration: { runway: runwayVideo, googleVeo3: googleVeo3Video, createomate: createomateVideo, json2Video: json2VideoVideo, falAIVideo },
+        },
+        marketingAgent: {
+          audio: { elevenLabs: elevenLabsAudio, piAPI: piAPIAudio, falAIVideo: falAIVideoMarketing },
+          marketing: { genspark: gensparkMarketing, manus: manusMarketing, minimax: minimaxMarketing, aiPlan: aiPlanMarketing },
+          crm: { goHighLevel: goHighLevelCRM, marketingBlocksAI: marketingBlocksAICRM, agentXHelp: agentXHelpCRM, n8nAutomation: n8nAutomationCRM },
+        }, tools,
+      });
+      toast({ title: "Settings Saved", description: "Global settings have been saved." });
+    } catch (error) {
+      toast({ title: "Save failed", description: (error as Error).message, variant: "destructive" });
+    } finally { setIsSaving(false); }
   };
 
   const handleAddTool = () => {
@@ -630,6 +679,7 @@ export default function GlobalSettings() {
             <div className="flex justify-end">
               <Button 
                 onClick={handleSaveChanges}
+                disabled={isSaving || !!loadError}
                 size="lg"
                 className="flex items-center space-x-2"
                 data-testid="button-save-changes"

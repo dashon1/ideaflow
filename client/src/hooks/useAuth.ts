@@ -10,9 +10,7 @@ export function useAuth() {
 
   // Persist the CSRF token returned by the server so all mutations can use it.
   useEffect(() => {
-    if (user && (user as any).csrfToken) {
-      setCsrfToken((user as any).csrfToken);
-    }
+    setCsrfToken((user as any)?.csrfToken ?? null);
   }, [user]);
 
   return {

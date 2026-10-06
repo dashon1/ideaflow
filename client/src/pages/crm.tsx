@@ -49,9 +49,8 @@ const allOff: UserFeatures = {
   agentXHelp: false, n8nAutomation: false,
 };
 
-const allOn: UserFeatures = Object.fromEntries(
-  Object.keys(allOff).map(k => [k, true])
-) as UserFeatures;
+const allOn: UserFeatures = { ...allOff };
+for (const key of Object.keys(allOn) as (keyof UserFeatures)[]) allOn[key] = true;
 
 const TIER_LABELS: Record<string, { label: string; color: string; icon: JSX.Element }> = {
   starter:      { label: "Starter",      color: "secondary", icon: <Zap className="w-3 h-3" /> },

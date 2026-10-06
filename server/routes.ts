@@ -15,6 +15,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Enable Replit authentication
   await setupAuth(app);
 
+  // Sessions and Passport must run before token verification.
+  // Stripe webhooks are registered earlier and use signature verification.
+  app.use("/api", (req, res, next) => {
+    if (["GET", "HEAD", "OPTIONS"].includes(req.method)) return next();
+    return verifyCsrf(req, res, next);
+  });
+
   // Helper to get authenticated user ID
   const getUserId = (req: any): string | null => {
     if (req.isAuthenticated && req.isAuthenticated() && req.user?.claims?.sub) {
@@ -131,10 +138,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/pain-points/:id/approve", requireAuth, aiLimiter, async (req, res) => {
     try {
       const { id } = req.params;
-      await storage.updatePainPointStatus(id, "approved");
-      
-      // Generate idea from approved pain point (with fallback mock data)
       const painPoint = await storage.getPainPointById(id);
+      if (!painPoint) return res.status(404).json({ message: "Pain point not found" });
       if (painPoint) {
         try {
           const summary = await summarizeIdea(painPoint.fullText);
@@ -155,10 +160,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         } catch (error) {
           console.error("OpenAI API error during idea generation:", error);
-          // Do not generate mock ideas - require real AI processing
+          return res.status(502).json({ message: "Idea generation failed. The pain point has not been approved; please try again." });
         }
       }
-      
+      await storage.updatePainPointStatus(id, "approved");
       res.json({ success: true });
     } catch (error) {
       console.error("Error approving pain point:", error);
@@ -216,8 +221,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (mvpId) {
         contentList = await storage.getContentByMvpId(mvpId as string);
       } else {
-        // Get all content - we need to add this method
-        contentList = [];
+        contentList = await storage.getAllContent();
       }
       
       res.json(contentList);
@@ -585,6 +589,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       ];
       
+      for (const id of ["template_discovery", "marketing"]) {
+        const saved = await storage.getSetting(getUserId(req)!, `agent_config_${id}`);
+        if (saved?.settingValue) agents.push({
+          id, name: id === "marketing" ? "Marketing Agent" : "Template Discovery Agent",
+          type: id, isActive: true, configuration: JSON.parse(saved.settingValue),
+        });
+      }
+      const userId = getUserId(req)!;
+      for (const agent of agents) {
+        const saved = await storage.getSetting(userId, `agent_config_${agent.id}`);
+        if (saved?.settingValue) agent.configuration = JSON.parse(saved.settingValue);
+      }
       res.json(agents);
     } catch (error) {
       console.error("Error fetching agents:", error);
@@ -789,7 +805,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Global settings routes (admin only)
   app.get("/api/global-settings", requireAdmin, async (req, res) => {
     try {
-      // Mock global settings for demonstration
+      const saved = await storage.getSetting(getUserId(req)!, "global_settings");
+      if (saved?.settingValue) return res.json(JSON.parse(saved.settingValue));
+      // Defaults used only until the administrator saves settings.
       const globalSettings = {
         adminControls: {
           enableAllProFeatures: true

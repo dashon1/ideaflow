@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import Sidebar from "@/components/sidebar";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -199,11 +201,56 @@ Content Goal: {{{contentGoal}}}`);
     }
   };
 
-  const handleSaveConfiguration = () => {
-    toast({
-      title: "Configuration Saved",
-      description: "Agent settings have been updated successfully.",
-    });
+  const { data: savedAgents } = useQuery<{ id: string; configuration: Record<string, any> }[]>({
+    queryKey: ["/api/agents"], enabled: isAuthenticated,
+  });
+  useEffect(() => {
+    for (const saved of savedAgents ?? []) {
+      const c = saved.configuration;
+      if (typeof c.isActive === "boolean") setAgents(current => current.map(a => a.id === saved.id ? { ...a, isActive: c.isActive } : a));
+      if (saved.id === "scraper") {
+        if (Array.isArray(c.prioritizedPlatforms)) setPrioritizedPlatforms(current => current.map(p => ({
+          ...p, isEnabled: c.prioritizedPlatforms.some((v: string | PlatformConfig) => typeof v === "string" ? v === p.name : v.name === p.name && v.isEnabled),
+        })));
+        if (Array.isArray(c.proExtenders)) setProExtenders(current => current.map(p => ({
+          ...p, isEnabled: c.proExtenders.some((v: string | PlatformConfig) => typeof v === "string" ? v === p.name : v.name === p.name && v.isEnabled),
+        })));
+        if (typeof c.resultsPerPlatform === "number") setResultsPerPlatform(c.resultsPerPlatform);
+        if (typeof c.nicheFilter === "string") setNicheFilter(c.nicheFilter);
+      }
+      if (saved.id === "summarizer" && typeof c.systemPrompt === "string") setSummarizerPrompt(c.systemPrompt);
+      if (saved.id === "content") {
+        if (c.contentPrompt) setContentPrompt(c.contentPrompt);
+        if (c.prioritizedLLM) setPrioritizedLLM(c.prioritizedLLM);
+        if (c.imageGeneration) setImageGeneration(c.imageGeneration);
+        if (c.videoGeneration) setVideoGeneration(c.videoGeneration);
+        if (c.audioGeneration) setAudioGeneration(c.audioGeneration);
+      }
+      if (saved.id === "template_discovery" && c.templateSources) setTemplateSources(c.templateSources);
+      if (saved.id === "marketing") {
+        if (c.platformIntegrations) setPlatformIntegrations(c.platformIntegrations);
+        if (c.marketingTools) setMarketingTools(c.marketingTools);
+        if (c.crmIntegration) setCrmIntegration(c.crmIntegration);
+        if (c.contentAgent) setContentAgent(c.contentAgent);
+      }
+    }
+  }, [savedAgents]);
+  const [savingAgent, setSavingAgent] = useState<string | null>(null);
+  const handleSaveConfiguration = async (agentId: string) => {
+    setSavingAgent(agentId);
+    const configurations: Record<string, object> = {
+      scraper: { prioritizedPlatforms, proExtenders, resultsPerPlatform, nicheFilter },
+      summarizer: { systemPrompt: summarizerPrompt },
+      content: { contentPrompt, prioritizedLLM, imageGeneration, videoGeneration, audioGeneration },
+      template_discovery: { templateSources },
+      marketing: { platformIntegrations, marketingTools, crmIntegration, contentAgent },
+    };
+    try {
+      await apiRequest(`/api/agents/${agentId}`, "PATCH", { ...configurations[agentId], isActive: agents.find(a => a.id === agentId)?.isActive });
+      toast({ title: "Configuration Saved", description: "Agent settings have been saved." });
+    } catch (error) {
+      toast({ title: "Save failed", description: (error as Error).message, variant: "destructive" });
+    } finally { setSavingAgent(null); }
   };
 
   const handleAddAgent = () => {
@@ -640,7 +687,8 @@ Content Goal: {{{contentGoal}}}`);
 
                         <div className="flex justify-end pt-6 border-t border-gray-200">
                           <Button 
-                            onClick={handleSaveConfiguration}
+                            onClick={() => handleSaveConfiguration(agent.id)}
+                            disabled={savingAgent !== null}
                             className="flex items-center space-x-2"
                             data-testid={`button-save-${agent.id}`}
                           >

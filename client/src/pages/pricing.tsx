@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 interface PricingTier {
   id: string;
@@ -49,11 +50,7 @@ export default function Pricing() {
         description: `Setting up ${tierId} subscription...`,
       });
 
-      const response = await fetch('/api/stripe/checkout/subscription', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tierId }),
-      });
+      const response = await apiRequest('/api/stripe/checkout/subscription', 'POST', { tierId });
 
       const data = await response.json();
       if (data.url) {
@@ -77,11 +74,7 @@ export default function Pricing() {
         description: "Setting up credit purchase...",
       });
 
-      const response = await fetch('/api/stripe/checkout/credits', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ packageId }),
-      });
+      const response = await apiRequest('/api/stripe/checkout/credits', 'POST', { packageId });
 
       const data = await response.json();
       if (data.url) {

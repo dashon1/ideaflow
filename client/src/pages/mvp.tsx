@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import type { Mvp, Idea } from "@shared/schema";
 import { Rocket, Code, Globe, Loader, Plus, X, Calendar, TrendingUp, Users } from "lucide-react";
 
 export default function MVP() {
@@ -27,11 +28,11 @@ export default function MVP() {
     launchDate: ''
   });
 
-  const { data: mvps = [] } = useQuery({
+  const { data: mvps = [] } = useQuery<Mvp[]>({
     queryKey: ['/api/mvps'],
   });
 
-  const { data: ideas = [] } = useQuery({
+  const { data: ideas = [] } = useQuery<Idea[]>({
     queryKey: ['/api/ideas'],
   });
 
@@ -70,13 +71,12 @@ export default function MVP() {
     }
     
     createMvpMutation.mutate({
-      title: mvpForm.title,
+      name: mvpForm.title,
       description: mvpForm.description,
       status: mvpForm.status,
-      url: mvpForm.url,
-      launchDate: mvpForm.launchDate || null,
-      platform: 'Custom',
-      template: 'custom'
+      generatedLink: mvpForm.url || null,
+      platformSelected: 'Custom',
+      mvpSpec: { launchDate: mvpForm.launchDate || null }
     });
   };
 
@@ -213,9 +213,9 @@ export default function MVP() {
                         <div>
                           <h3 className="font-medium text-gray-900">{mvp.name || mvp.title || mvp.ideaId}</h3>
                           <p className="text-sm text-gray-600">{mvp.description || 'No description'}</p>
-                          {mvp.url && (
-                            <a href={mvp.url} className="text-xs text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">
-                              {mvp.url}
+                          {mvp.generatedLink && (
+                            <a href={mvp.generatedLink} className="text-xs text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">
+                              {mvp.generatedLink}
                             </a>
                           )}
                         </div>

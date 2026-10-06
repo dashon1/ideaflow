@@ -127,15 +127,14 @@ export async function generateComprehensiveMockData() {
       painPointId: painPoint.id,
       summaryText: `Smart ${painPoint.detectedNiche} solution: ${painPoint.title?.substring(0, 80)}...`,
       problemType: painPoint.problemType || "Pain Point",
-      confidenceScore: (Math.random() * 30 + 70).toFixed(1), // 70-100% confidence
+      confidenceScore: (Math.random() * 0.3 + 0.7).toFixed(2),
       tags: [painPoint.detectedNiche || "General", painPoint.problemType || "Pain Point", 'validated', 'high-priority'],
       userType: ['entrepreneurs', 'small business owners', 'freelancers', 'remote workers', 'developers'][Math.floor(Math.random() * 5)],
       domain: painPoint.detectedNiche || "General",
       appType: ['SaaS platform', 'mobile app', 'web application', 'browser extension', 'API service'][Math.floor(Math.random() * 5)],
-      priorityScore: (Math.random() * 25 + 75).toFixed(1), // 75-100 priority
+      priorityScore: (Math.random() * 2.5 + 7.5).toFixed(1),
       isWellSolved: Math.random() < 0.25, // 25% are well-solved
       status: Math.random() < 0.8 ? 'approved' : 'pending', // 80% approved
-      timestamp: new Date(),
     };
     
     const [inserted] = await db.insert(ideas).values(ideaData).returning();
@@ -150,20 +149,14 @@ export async function generateComprehensiveMockData() {
     const idea = approvedIdeas[i];
     const mvpData: InsertMvp = {
       ideaId: idea.id,
-      title: `${idea.domain} MVP - ${idea.appType}`,
+      name: `${idea.domain} MVP - ${idea.appType}`,
       description: `Production-ready prototype: ${idea.summaryText?.substring(0, 100)}...`,
-      platform: ['Lovable', 'Base44', 'Replit', 'V0.dev', 'Cursor'][Math.floor(Math.random() * 5)],
-      repositoryLink: `https://github.com/ideaflow/mvp-${generateId()}`,
-      deploymentLink: `https://mvp-${generateId()}.replit.app`,
-      buildStatus: ['completed', 'building', 'deployed', 'testing'][Math.floor(Math.random() * 4)],
-      buildStartedAt: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000), // Last 7 days
-      buildCompletedAt: Math.random() < 0.7 ? new Date(Date.now() - Math.random() * 3 * 24 * 60 * 60 * 1000) : null,
-      techStack: [
+      platformSelected: ['Lovable', 'Base44', 'Replit', 'V0.dev', 'Cursor'][Math.floor(Math.random() * 5)],
+      mvpSpec: { techStack: [
         'React + TypeScript', 'Node.js + Express', 'PostgreSQL', 'OpenAI GPT-4', 
         'Tailwind CSS', 'Drizzle ORM', 'Authentication'
-      ].slice(0, Math.floor(Math.random() * 4) + 3).join(', '),
+      ].slice(0, Math.floor(Math.random() * 4) + 3) },
       status: ['building', 'deployed', 'testing', 'live'][Math.floor(Math.random() * 4)],
-      timestamp: new Date(),
     };
     
     const [inserted] = await db.insert(mvps).values(mvpData).returning();
@@ -179,7 +172,7 @@ export async function generateComprehensiveMockData() {
       const contentData: InsertContent = {
         mvpId: mvp.id,
         contentType: contentTypes[Math.floor(Math.random() * contentTypes.length)],
-        scriptText: `Compelling marketing narrative for ${mvp.title}: Transform your ${mvp.title?.split(' ')[0]} workflow with our innovative solution. Built for ${mvp.techStack?.split(',')[0]} users who demand efficiency...`,
+        scriptText: `Compelling marketing narrative for ${mvp.name}: Transform your ${mvp.name.split(' ')[0]} workflow with our innovative solution.`,
         videoFormatSelected: ['short-form', 'long-form', 'tutorial', 'demo'][Math.floor(Math.random() * 4)],
         generationPlatformUsed: ['OpenAI GPT-4', 'Claude Sonnet', 'Gemini Pro', 'Custom AI'][Math.floor(Math.random() * 4)],
         linkToGeneratedAsset: `https://content.ideaflow.com/${mvp.id}/asset-${generateId()}`,
@@ -190,7 +183,6 @@ export async function generateComprehensiveMockData() {
           duration: ['15s', '30s', '60s', '3min'][Math.floor(Math.random() * 4)],
           style: ['professional', 'casual', 'educational', 'promotional'][Math.floor(Math.random() * 4)]
         },
-        timestamp: new Date(),
       };
       
       await db.insert(content).values(contentData);
@@ -198,7 +190,7 @@ export async function generateComprehensiveMockData() {
   }
 
   // Step 5: Generate realistic scraping jobs history
-  const scrapingJobsData: InsertScrapingJob[] = [
+  const scrapingJobsData: (typeof scrapingJobs.$inferInsert)[] = [
     {
       jobType: 'niche',
       targetNiche: 'AI automation tools',
@@ -212,7 +204,6 @@ export async function generateComprehensiveMockData() {
       startedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
       completedAt: new Date(Date.now() - 1.5 * 24 * 60 * 60 * 1000),
       metadata: { requestedBy: 'demo-user', platforms: ['Reddit', 'TikTok', 'Quora'] },
-      timestamp: new Date(),
     },
     {
       jobType: 'discovery',
@@ -227,7 +218,6 @@ export async function generateComprehensiveMockData() {
       startedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
       completedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
       metadata: { requestedBy: 'demo-user', platforms: ['Reddit', 'LinkedIn', 'Twitter/X'] },
-      timestamp: new Date(),
     },
     {
       jobType: 'niche',
@@ -242,7 +232,6 @@ export async function generateComprehensiveMockData() {
       startedAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
       completedAt: null,
       metadata: { requestedBy: 'demo-user', platforms: ['Reddit', 'TikTok'] },
-      timestamp: new Date(),
     },
     {
       jobType: 'discovery',
@@ -257,7 +246,6 @@ export async function generateComprehensiveMockData() {
       startedAt: new Date(Date.now() - 8 * 60 * 60 * 1000), // 8 hours ago
       completedAt: null,
       metadata: { requestedBy: 'demo-user', platforms: ['Quora', 'Product Hunt'], error: 'Rate limit exceeded' },
-      timestamp: new Date(),
     }
   ];
 
