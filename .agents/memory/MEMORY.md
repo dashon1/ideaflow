@@ -4,3 +4,4 @@
 - [Rate limiting](rate-limiting.md) — express-rate-limit: global 300/min in index.ts; scraper 5/min and AI-approve 15/min in rateLimiters.ts applied per-route.
 - [DB constraints](db-constraints.md) — unique index on pain_points.unique_hash; unique constraint on settings(user_id, setting_key); both applied via drizzle-kit push.
 - [Database driver results](database-driver-results.md) — raw result formats vary; verify credit changes against the real driver, not just compilation.
+- [Stripe test-key recovery](stripe-test-key-recovery.md) — user approved a development-only key bypass after managed sandbox recovery failed; live payments remain managed.

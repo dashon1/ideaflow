@@ -3,6 +3,24 @@ import Stripe from 'stripe';
 let connectionSettings: any;
 
 async function getCredentials() {
+  const isProduction = process.env.REPLIT_DEPLOYMENT === '1';
+  // Explicit test credentials override the connector only in development.
+  // Production continues to use its managed Stripe connection.
+  if (!isProduction && process.env.NODE_ENV !== 'production') {
+    const secretKey = process.env.STRIPE_TEST_SECRET_KEY?.trim();
+    const publishableKey = process.env.STRIPE_TEST_PUBLISHABLE_KEY?.trim();
+
+    if (secretKey || publishableKey) {
+      if (!secretKey || !publishableKey) {
+        throw new Error('Set both STRIPE_TEST_SECRET_KEY and STRIPE_TEST_PUBLISHABLE_KEY in Secrets');
+      }
+      if (!/^(sk|rk)_test_/.test(secretKey) || !publishableKey.startsWith('pk_test_')) {
+        throw new Error('Stripe development overrides require test-mode keys, not live keys');
+      }
+      return { secretKey, publishableKey };
+    }
+  }
+
   const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
   const xReplitToken = process.env.REPL_IDENTITY
     ? 'repl ' + process.env.REPL_IDENTITY
@@ -15,7 +33,6 @@ async function getCredentials() {
   }
 
   const connectorName = 'stripe';
-  const isProduction = process.env.REPLIT_DEPLOYMENT === '1';
   const targetEnvironment = isProduction ? 'production' : 'development';
 
   const url = new URL(`https://${hostname}/api/v2/connection`);
