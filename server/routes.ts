@@ -7,7 +7,7 @@ import { insertPainPointSchema, insertIdeaSchema, insertMvpSchema } from "@share
 import { summarizeIdea, classifyIdea } from "./services/openai";
 import { scrapeAllPlatforms } from "./services/scraper";
 import { scrapeMultiplePlatforms } from "./services/platformApi";
-import { calculateJobCost, CREDIT_COSTS, hasplatformAccess, PRICING_TIERS, CREDIT_PACKAGES } from "./services/pricing";
+import { calculateJobCost, CREDIT_COSTS, hasplatformAccess, PRICING_TIERS } from "./services/pricing";
 import { getOrCreateCsrfToken, verifyCsrf } from "./csrf";
 import { scraperLimiter, aiLimiter } from "./rateLimiters";
 
@@ -695,10 +695,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/pricing", async (req, res) => {
     try {
+      const packages = await storage.getCreditPackages();
       res.json({
         tiers: PRICING_TIERS,
         creditCosts: CREDIT_COSTS,
-        packages: CREDIT_PACKAGES
+        packages,
       });
     } catch (error) {
       console.error("Error fetching pricing:", error);
@@ -714,9 +715,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Unauthorized - please log in to purchase" });
       }
       const { packageId } = req.body;
+      if (typeof packageId !== "string" || !packageId.trim()) {
+        return res.status(400).json({ message: "A valid credit package ID is required" });
+      }
       
       const creditPackage = await storage.getCreditPackageById(packageId);
-      if (!creditPackage) {
+      if (!creditPackage || !creditPackage.isActive) {
         return res.status(404).json({ message: "Credit package not found" });
       }
 
