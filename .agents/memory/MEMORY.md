@@ -5,3 +5,4 @@
 - [DB constraints](db-constraints.md) — unique index on pain_points.unique_hash; unique constraint on settings(user_id, setting_key); both applied via drizzle-kit push.
 - [Database driver results](database-driver-results.md) — raw result formats vary; verify credit changes against the real driver, not just compilation.
 - [Stripe test-key recovery](stripe-test-key-recovery.md) — user approved a development-only key bypass after managed sandbox recovery failed; live payments remain managed.
+- [Subscription entitlements](subscription-entitlements.md) — reconcile displays to enforced access; inconsistent marketing or catalog labels do not authorize expanded paid entitlements.

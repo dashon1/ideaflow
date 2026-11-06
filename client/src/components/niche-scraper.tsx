@@ -24,8 +24,8 @@ export default function NicheScraper() {
     queryKey: ['/api/auth/user'],
   });
 
-  const userTier = (user as any)?.subscriptionTier || 'standard';
-  const availablePlatforms = getPlatformsByTier(userTier as 'standard' | 'pro' | 'elite');
+  const userTier = (user as any)?.subscriptionTier || 'starter';
+  const availablePlatforms = getPlatformsByTier(userTier);
 
   // Filter platforms that are currently shown by the old platform selection
   const displayPlatforms = availablePlatforms.filter(platform => 

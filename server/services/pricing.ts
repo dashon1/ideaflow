@@ -1,5 +1,7 @@
 // Competitive pricing strategy based on market research
 // Market rates: Scraping $0.001-0.005/request, GPT-4o $0.005-0.015/1k tokens
+import { PLATFORM_ACCESS, hasPlatformAccess } from '../../shared/platform-access';
+export { PLATFORM_ACCESS } from '../../shared/platform-access';
 
 export interface PricingTier {
   id: string;
@@ -99,10 +101,10 @@ export const PRICING_TIERS: PricingTier[] = [
     monthlyPrice: 49,
     monthlyCredits: 750,
     creditsPerDollar: 15.3,
-    platforms: 5,
+    platforms: PLATFORM_ACCESS.starter.length,
     features: [
       '750 credits per month',
-      '5 social platforms (Reddit, TikTok, Quora, Product Hunt, Indie Hackers)',
+      `${PLATFORM_ACCESS.starter.length} platforms (Reddit, Hacker News, GitHub Issues, Product Hunt, Quora, TikTok, Indie Hackers)`,
       'Pain point discovery',
       'Basic AI analysis',
       'Idea classification',
@@ -116,10 +118,10 @@ export const PRICING_TIERS: PricingTier[] = [
     monthlyPrice: 99,
     monthlyCredits: 2000,
     creditsPerDollar: 20.2,
-    platforms: 15,
+    platforms: PLATFORM_ACCESS.professional.length,
     features: [
       '2,000 credits per month',
-      '15 social platforms',
+      `${PLATFORM_ACCESS.professional.length} platforms`,
       'Full AI processing suite',
       'MVP generation (1-2 per month)',
       'Content creation tools',
@@ -135,10 +137,10 @@ export const PRICING_TIERS: PricingTier[] = [
     monthlyPrice: 249,
     monthlyCredits: 6000,
     creditsPerDollar: 24.1,
-    platforms: 50,
+    platforms: PLATFORM_ACCESS.enterprise.length,
     features: [
       '6,000 credits per month',
-      'All 50+ platforms',
+      `All ${PLATFORM_ACCESS.enterprise.length} platforms`,
       'Unlimited AI processing',
       'Unlimited MVP generation',
       'Full content creation suite',
@@ -186,30 +188,6 @@ export const CREDIT_PACKAGES = [
   },
 ];
 
-// Platform access by tier
-export const PLATFORM_ACCESS = {
-  starter: [
-    'reddit', 'hackernews', 'github', 'producthunt', 'quora', 'tiktok', 'indiehackers'
-  ],
-  professional: [
-    'reddit', 'hackernews', 'github', 'producthunt', 'quora', 'tiktok', 'indiehackers',
-    'linkedin', 'twitter', 'facebook', 'instagram', 'youtube',
-    'medium', 'stackoverflow', 'discord'
-  ],
-  enterprise: [
-    // All 50+ platforms
-    'reddit', 'tiktok', 'quora', 'producthunt', 'indiehackers',
-    'linkedin', 'twitter', 'facebook', 'facebookgroups', 'instagram', 'youtube',
-    'glassdoor', 'indeed', 'amazon', 'googleplay', 'appstore', 
-    'trustpilot', 'g2', 'capterra', 'yelp', 'bbb', 'etsy',
-    'github', 'stackoverflow', 'stackexchange', 'devto', 'medium', 'hackernews',
-    'substack', 'pinterest', 'tumblr', 'discord', 'slack', 'telegram', 'whatsapp',
-    'twitch', 'kick', 'snapchat', 'blind', 'kickstarter', 'indiegogo',
-    'mastodon', 'bluesky', 'lemmy', 'kbin', 'superuser', 'askubuntu', 'serverfault',
-    'clubhouse', 'spaces', 'productboard', 'canny', 'uservoice', 'featureupvote'
-  ]
-};
-
 // Calculate credit cost for a scraping job
 export function calculateJobCost(platforms: string[], painPointsExpected: number = 10): number {
   const scrapingCost = platforms.reduce((total, platform) => {
@@ -230,8 +208,7 @@ export function getPricingTier(tierId: string): PricingTier | undefined {
 
 // Check if user has access to platform based on tier
 export function hasplatformAccess(userTier: string, platform: string): boolean {
-  const tierPlatforms = PLATFORM_ACCESS[userTier as keyof typeof PLATFORM_ACCESS] || [];
-  return tierPlatforms.includes(platform.toLowerCase());
+  return hasPlatformAccess(userTier, platform);
 }
 
 // Calculate subscription upgrade cost

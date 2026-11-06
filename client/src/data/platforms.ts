@@ -1,4 +1,6 @@
-// Complete list of 50+ platforms for comprehensive pain point discovery
+import { PLATFORM_ACCESS, getTierPlatforms } from "@shared/platform-access";
+
+// Catalog labels are metadata, not authorization rules.
 export const ALL_PLATFORMS = [
   // Core Platforms (Starter Tier) - Free APIs available
   { id: 'reddit', name: 'Reddit', category: 'Social', tier: 'starter', active: true },
@@ -83,19 +85,19 @@ export const ALL_PLATFORMS = [
 
 export const TIER_LIMITS = {
   starter: {
-    platforms: ALL_PLATFORMS.filter(p => p.tier === 'starter').map(p => p.id),
+    platforms: PLATFORM_ACCESS.starter,
     maxJobsPerDay: 3,
     apiQuota: 100,
     features: ['Core platform access', 'Pain point discovery', 'Simple analytics']
   },
   professional: {
-    platforms: ALL_PLATFORMS.filter(p => p.tier === 'starter' || p.tier === 'professional').map(p => p.id),
+    platforms: PLATFORM_ACCESS.professional,
     maxJobsPerDay: 10,
     apiQuota: 500,
     features: ['Advanced scraping', 'AI analysis', 'MVP generation', 'Content creation']
   },
   enterprise: {
-    platforms: ALL_PLATFORMS.map(p => p.id), // All platforms
+    platforms: PLATFORM_ACCESS.enterprise,
     maxJobsPerDay: -1, // Unlimited
     apiQuota: -1, // Unlimited
     features: ['Full platform access', 'Unlimited scraping', 'Priority support', 'Custom integrations']
@@ -126,10 +128,8 @@ export const PLATFORM_CATEGORIES = [
 ] as const;
 
 export function getPlatformsByTier(tier: string) {
-  // Return platforms available for the user's tier
-  const tierKey = tier as keyof typeof TIER_LIMITS;
-  const tierPlatformIds = TIER_LIMITS[tierKey]?.platforms || TIER_LIMITS.starter.platforms;
-  return ALL_PLATFORMS.filter(p => (tierPlatformIds as readonly string[]).includes(p.id));
+  const tierPlatformIds = getTierPlatforms(tier);
+  return ALL_PLATFORMS.filter(p => tierPlatformIds.includes(p.id));
 }
 
 export function getPlatformsByCategory(category: string) {

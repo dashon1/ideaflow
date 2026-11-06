@@ -10,6 +10,7 @@ import { scrapeMultiplePlatforms } from "./services/platformApi";
 import { calculateJobCost, CREDIT_COSTS, hasplatformAccess, PRICING_TIERS } from "./services/pricing";
 import { getOrCreateCsrfToken, verifyCsrf } from "./csrf";
 import { scraperLimiter, aiLimiter } from "./rateLimiters";
+import { getTierPlatforms } from "@shared/platform-access";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Enable Replit authentication
@@ -64,8 +65,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const credits = await storage.getUserCredits(userId);
-      const { PLATFORM_ACCESS } = await import('./services/pricing');
-      const tierPlatforms = PLATFORM_ACCESS[user.subscriptionTier as keyof typeof PLATFORM_ACCESS] || PLATFORM_ACCESS.starter;
+      const tierPlatforms = getTierPlatforms(user.subscriptionTier || 'starter');
       
       // Ensure a CSRF token exists in the session and return it to the client
       const csrfToken = getOrCreateCsrfToken(req);
@@ -928,12 +928,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!['starter', 'professional', 'enterprise'].includes(tier)) {
         return res.status(400).json({ message: "Invalid tier. Must be starter, professional, or enterprise." });
       }
-
-      const tierConfigs = {
-        starter:      { apiQuota: 100,  maxJobsPerDay: 3,  platforms: ['reddit', 'hackernews', 'github', 'producthunt', 'quora', 'tiktok', 'indiehackers'] },
-        professional: { apiQuota: 500,  maxJobsPerDay: 10, platforms: ['reddit', 'hackernews', 'github', 'producthunt', 'quora', 'tiktok', 'indiehackers', 'linkedin', 'twitter', 'facebook', 'facebookgroups', 'instagram', 'youtube', 'glassdoor', 'indeed', 'amazon', 'googleplay', 'appstore', 'trustpilot', 'g2', 'capterra', 'yelp', 'bbb', 'etsy', 'stackoverflow', 'stackexchange', 'devto', 'medium'] },
-        enterprise:   { apiQuota: -1,   maxJobsPerDay: -1, platforms: [] }, // all platforms
-      };
 
       const target = await storage.getUser(userId);
       if (!target) return res.status(404).json({ message: "User not found" });

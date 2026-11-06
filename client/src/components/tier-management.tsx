@@ -6,7 +6,8 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Crown, Star, Zap, Check, X } from "lucide-react";
-import { TIER_LIMITS, ALL_PLATFORMS } from "@/data/platforms";
+import { TIER_LIMITS } from "@/data/platforms";
+import { getTierPlatforms } from "@shared/platform-access";
 
 interface User {
   id: string;
@@ -56,7 +57,7 @@ export default function TierManagement() {
   }
 
   const currentTier = user?.subscriptionTier || 'starter';
-  const tierLimits = TIER_LIMITS[currentTier];
+  const tierLimits = TIER_LIMITS[currentTier] || TIER_LIMITS.starter;
   const quotaPercentage = user?.apiQuotaLimit === -1 ? 0 : 
     Math.round((user?.apiQuotaUsed || 0) / (user?.apiQuotaLimit || 1) * 100);
 
@@ -90,7 +91,7 @@ export default function TierManagement() {
       icon: <Crown className="w-6 h-6" />,
       color: 'gold',
       features: TIER_LIMITS.enterprise.features,
-      platformCount: ALL_PLATFORMS.length,
+      platformCount: TIER_LIMITS.enterprise.platforms.length,
       quota: 'Unlimited',
       dailyJobs: 'Unlimited'
     }
@@ -128,7 +129,7 @@ export default function TierManagement() {
             </div>
             <div>
               <p className="text-sm text-gray-600">Platform Access</p>
-              <p className="font-medium">{tierLimits.platforms.length} platforms</p>
+              <p className="font-medium">{getTierPlatforms(currentTier).length} platforms</p>
             </div>
             <div>
               <p className="text-sm text-gray-600">Daily Jobs</p>
