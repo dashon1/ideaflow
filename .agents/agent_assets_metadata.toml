@@ -14,3 +14,17 @@ mtime_ms = 1793932261670
 storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:83b15036-c60d-4615-8ab8-bc3337c3852c/163143f3-c609-403f-ba6e-f18a68e4e220/b6ab36e1-26d1-43be-a18d-f6e49ca9e3b4"
 storage_version_token = "1793932276319631"
 content_type = "video/mp4"
+
+[[outputs]]
+id = "PAs0HOUP2CikKlkYTtZcm"
+uri = "file://generated-artifacts/videos/ideaflow-project-reel-1080x1920.mp4"
+type = "video"
+title = "IdeaFlow Vertical Reel"
+description = "8-second MP4 in vertical 9:16 format, 1080 × 1920. Original animation preserved with a blurred background, ready for Reels, TikTok, or Shorts."
+logical_id = "27bac1de-33ce-4c39-8ebd-1a56c53fe6d2"
+content_hash = "sha256:49f84ca163d130cd2e711237924adde5115eadedc550130acc9e28235f1f6771"
+size = 4315765
+mtime_ms = 1793932636974
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:83b15036-c60d-4615-8ab8-bc3337c3852c/27bac1de-33ce-4c39-8ebd-1a56c53fe6d2/289f9e52-19b0-4de8-86bc-278e88d49d87"
+storage_version_token = "1793932645263088"
+content_type = "video/mp4"
