@@ -1,0 +1,16 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "4IWgzkK3mDZPDX0Jbm3pk"
+uri = "file://generated-artifacts/videos/ideaflow-project-promo-1080p.mp4"
+type = "video"
+title = "IdeaFlow Animated Promo"
+description = "8-second widescreen animation in 1080p: discover real-world problems, generate product ideas, and build an MVP. MP4 download."
+logical_id = "163143f3-c609-403f-ba6e-f18a68e4e220"
+content_hash = "sha256:9b18dde2ac351a260c6bda9bd2ce97af12563baa7a14c02c49f55e5732322153"
+size = 8658618
+mtime_ms = 1793932261670
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:83b15036-c60d-4615-8ab8-bc3337c3852c/163143f3-c609-403f-ba6e-f18a68e4e220/b6ab36e1-26d1-43be-a18d-f6e49ca9e3b4"
+storage_version_token = "1793932276319631"
+content_type = "video/mp4"
